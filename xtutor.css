@@ -1,0 +1,195 @@
+body {
+    background-color: #eeeeee;
+}
+
+h1 {
+    color: black;
+    text-align: left;
+}
+h2 {
+    color: black;
+    text-align: center;
+}
+
+img.logo{
+	width: 120px;
+	height:80px
+}	
+img.logo2{
+	width: 80px;
+	height:45px
+}	
+table.header{
+	text-align: center;
+	width: 100%;
+    border: 0px;
+    padding: 0px;
+    margin: 0px;
+	border-style: solid;
+	/*background-color: #222255;*/
+	background-color: #000000;
+	color: #ffffff;
+	font-family:Tahoma;
+	font-size:20px;
+} 
+
+table.header2{
+	text-align: center;
+	width: 100%;
+    border: 0px;
+    padding: 0px;
+    margin: 0px;
+	border-style: solid;
+	background-color: #222255;
+	color: #ffffff;
+	font-family:Tahoma;
+	font-size:10px;
+} 
+
+
+table.header a{
+	color: #ddddff;
+}
+
+table.header a:visited{
+	color: #ddddff;
+}
+
+  
+
+div.header {
+    border: 5px;
+    padding: 5px;
+    margin: 5px;
+}
+
+div.header img{
+	width:100%;
+	margin:auto;
+}
+div.form1 {
+	text-align: center;
+	width: 800px;
+    border: 10px;
+    padding: 10px;
+    margin: auto;
+	border-style: none;
+}
+
+/* Style the top navigation bar */
+div.menu {
+	vertical-align:top;
+    overflow:hidden;
+    background-color: #fffff;
+	
+}
+
+/* Style the topnav links */
+div.menu a {
+    float: left;
+	width:180px;
+    display: block;
+    color: #00000;
+    text-align: center;
+    padding:16px;
+	margin:10px;
+    text-decoration: none;
+	font-family: verdana;
+    font-size: 18px;
+	color: #ffffff;
+	background-color: #222255;
+	border-style: groove;
+	
+}
+
+/* Change color on hover */
+div.menu a.current {
+    /*background-color: #4CAF50;*/
+	background-color: #880033;
+    color: white;
+}
+
+
+/* Change color on hover */
+div.menu a:hover {
+    background-color: #555555;
+    color: white;
+}
+
+div.form1 table {
+	font-family: verdana;
+    font-size: 16px;
+	align-self:center;
+	border-style: solid;
+    border-width: 3px;
+	padding:16px;
+	margin:auto;  
+    width: 50%; 
+}
+div.form1 table td{
+	border-style:none;
+    border-width: 3px;
+	padding:16px;
+	margin:auto;
+}
+
+a.formbutton {
+	
+    width:50%;
+    display: block;
+    color: #00000;
+    text-align: center;
+    padding:1px;
+	margin:auto;
+    text-decoration: none;
+	font-family: verdana;
+    font-size: 16px;
+	color: #111155;
+	background-color: #ddd;
+	border-style: groove;
+	border-radius: 5px;
+	
+}
+
+div.content {
+    border: 10px;
+    padding: 10px;
+    margin: auto;
+	width:100%;
+}
+
+#formattedtable {
+    font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+    border-collapse: collapse;
+    width: 100%;
+	margin:auto;
+}
+
+#formattedtable td,th {
+    border: 1px solid #000000;
+    padding: 8px;
+}
+
+#formattedtable tr:nth-child(even){background-color: #f2f2f2;}
+
+#formattedtable tr:hover {background-color: #ddd;}
+
+#formattedtable th {
+    padding-top: 12px;
+    padding-bottom: 12px;
+    text-align: left;
+    background-color: #222848;
+    color: white;
+	border: 1px solid #000000;
+}
+
+ .centraltext {
+    padding-top: 1px;
+    padding-bottom: 1px;
+    text-align: center;
+    border-style: solid;
+	color: #555555;
+	font-family:Tahoma;
+	font-size:18px;
+	border-width: 0.5px;
+}

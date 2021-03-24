@@ -1,0 +1,174 @@
+<?php
+include("security/header.php"); //header reads the table and extract LESSON_CODEVAR
+$ACCESS=1;
+$con=openDB();
+
+if($USER_TYPE!='STUDENT')
+{
+	$requestcode=$_GET['requestcode'];  //lesson does not exists yet 
+	//we look if the lesson already exists 
+	$query="SELECT LESSONCODE FROM LESSONREQUESTS2 WHERE CODE=$requestcode";
+	$res=genesis_exec($con,$query);
+	$code=genesis_result($res,1);
+	if(is_null($code))$code="";
+}
+else //STUDENT must have code
+{
+	$code=$_GET['code']; 
+}
+
+//first the code is saved in the tutors record when lesson is  created
+//second the code is saved in the tutors record when student enters the lesson, so if lesson is in table(session variables) then it must be in tutor´s record
+
+if($USER_TYPE!='STUDENT')
+	$query="SELECT STATUS,LESSONCODE FROM LESSONREQUESTS2 WHERE TUTOR=$USER_CODE AND STATUS IN (0,1,2)";
+else	
+    $query="SELECT STATUS,LESSONCODE FROM LESSONREQUESTS2 WHERE USERCODE=$USER_CODE AND STATUS IN (0,1,2)";
+$result=genesis_exec($con,$query);
+if(genesis_fetch_row($result))
+{  
+	$STATUS=genesis_result($result,1);
+	$LESSON_CODEVAR=genesis_result($result,2);
+	if(is_null($LESSON_CODEVAR))$LESSON_CODEVAR="";
+}
+else $STATUS=0;
+
+if($ACCESS && $code!="" && $STATUS!=0 && $LESSON_CODEVAR!=$code)  
+{
+	$message='You have another active lesson. Please continue or stop your active lesson.';
+	$ACCESS=0;
+}
+
+if( $ACCESS && $code=="" && $USER_TYPE=='STUDENT')
+{
+	$message='You need a lesson code. Please request one from your tutor.';
+	$ACCESS=0;
+}
+
+if( $ACCESS && $USER_BALANCE<=1 && $USER_TYPE=='STUDENT')
+{
+	$message='You have too few available minutes. Please add minutes';
+	$ACCESS=0;
+}
+
+//if there is an active lesson it will continue with the active lesson, this applies to both types students and tutors
+if( $ACCESS && $STATUS==3 )
+{
+	//Do not change the requested code
+	//$code=$LESSON_CODEVAR;   //continues ahead and continues with the same lesson
+	$ACCESS=1;
+}
+//include_once('HttpRequest.php'); //where HttpRequest.php is the saved file
+
+/*echo "Hello";
+echo "ACCESS=$ACCESS";
+echo  "code=$code"; 
+echo "STATUS=$STATUS";
+echo "USER_TYPE=$USER_TYPE";
+*/
+if( $ACCESS && $code=="" && $STATUS==0 && $USER_TYPE!='STUDENT')  //only TUTOR creates new lesson
+{
+	# Our new data
+	$data = array(
+		'username' => 'xtutor-info',
+		'password' => 'babel123',
+		'meetingtitle'=>'Xtutor.online'		
+	);
+	//'presenterusername'=>$USER_NAME
+	$url = 'https://www.twiddla.com/API/CreateMeeting.aspx';
+	# Form our options
+	$postString = http_build_query($data);
+    $opts = array('http' =>
+    array(
+        'method'  => 'POST',
+        'header'  => 'Content-type: application/x-www-form-urlencoded',
+        'content' => $postString
+    )
+	);
+	# Create the context
+	$context = stream_context_create($opts);
+	# Get the response (you can use this for GET)
+	$code = file_get_contents($url, false, $context);
+	//echo "code returned by API=$code";
+
+}
+//echo "code =$code";
+
+
+
+genesis_commit($con);
+closeDB($con);
+if( !$ACCESS)
+{
+	echo "<script>alert('$message');window.close();</script>";
+	exit();
+}
+
+?>
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="xtutor.css">
+<title>xtutor</title>
+<script>
+function sleep(milliseconds) {
+  var start = new Date().getTime();
+  for (var i = 0; i < 1e7; i++) {
+    if ((new Date().getTime() - start) > milliseconds){
+      break;
+    }
+  }
+}
+<? 
+
+echo "var code='$code';";
+echo "var requestcode='$requestcode';";
+echo "var name='$USER_NAME';";
+
+?>
+
+<?if($WHITEBOARD=="TWIDDLA"){
+if($USER_TYPE!='STUDENT')
+{
+?>
+var source1='lessonwindowheader.htm?code='+code+'&requestcode='+requestcode;
+var source2='https://www.twiddla.com/api/start.aspx?sessionid='+code+'&guestname='+name+'&autostart=true&hide=invite,profile,welcome,url,math,logo,roomsettings,email,widgets';
+<?
+}else{
+?>
+var source1='lessonwindowheader.htm?code='+code+'&requestcode='+requestcode;
+var source2='https://www.twiddla.com/api/start.aspx?sessionid='+code+'&guestname='+name+'&autostart=true&hide=invite,profile,welcome,url,math,logo,roomsettings,email,widgets';
+<?
+}}else{?>
+// this may cause error for LIVEBOARD, it needs to consider user types
+var source1='lessonwindowheader.htm?code='+code;
+var source2='https://app.liveboard.online';
+<?}?>
+//alert(source1);
+//alert(source2);
+</script>
+</head>
+<body>
+<!--  if the code exists then the lesson exists previously, we dont need to create another lesson -->
+<!--  <iframe id="iframe1" src="lessonwindowheader.htm?sessionid=<?echo $code;?>" width=100% height=90>  -->
+<iframe id="iframe1"  width="100%" height="135">
+  <p>Your browser does not support iframes.</p>
+    
+</iframe>
+<script>
+document.getElementById("iframe1").src = source1;
+</script>
+<iframe id="iframe2" width="100%" height="550">
+<!--<iframe id="iframe2" src="https://app.liveboard.online" width=100% height=800>-->
+  <p>Your browser does not support iframes.</p>
+  
+</iframe>
+<script>
+document.getElementById('iframe2').src = source2;
+
+</script>
+
+</body>
+</html>
+
+

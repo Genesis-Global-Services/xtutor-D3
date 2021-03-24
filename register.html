@@ -1,0 +1,791 @@
+<?php 
+ include("security/header.php");
+ require_once("validate_user_email.php");
+
+ $con=openDB();
+ if($hay_sesion) $modify=1;
+ else $modify=0;
+ //if modify then $USER_TYPE already has the type
+if($_GET['type']=='tutor')
+	$USER_TYPE='TUTOR';
+else
+	$USER_TYPE='STUDENT';
+ 
+ 
+ if($modify==1)
+{
+	$query="SELECT NAME,EMAIL,AES_DECRYPT(UNHEX(PASSWORD),UNHEX(SHA2('babel',512))),SCHOOLTYPE,GENDER,USERTYPE,TUTORLEVEL
+		    , LANGUAGE, TARIFF, SUMMARY FROM USERS2 WHERE USERCODE='$USER_CODE'";	// Modificado:  Marcelo Aparicio 04/06/2020
+	//echo "query=$query";
+	$resultado=genesis_exec($con,$query);
+    $NAME=genesis_result($resultado,1);
+	$EMAIL=genesis_result($resultado,2);
+	$PASSWORD=genesis_result($resultado,3);
+	$SCHOOL=genesis_result($resultado,4);
+	$GENDER=genesis_result($resultado,5);
+	$USER_TYPE=genesis_result($resultado,6);
+	$TUTORLEVEL=genesis_result($resultado,7);
+	
+	$LANGUAGE=genesis_result($resultado,8);	// Adicionado:  Marcelo Aparicio 04/06/2020
+	$TARIFF=genesis_result($resultado,9);	// Adicionado:  Marcelo Aparicio 04/06/2020
+	$SUMMARY=genesis_result($resultado,10);	// Adicionado:  Marcelo Aparicio 04/06/2020
+	
+}
+else
+{
+	$NAME="";
+	$EMAIL="";
+	$PASSWORD="";
+	$SCHOOL=0;
+	$GENDER=0;
+    $TUTORLEVEL=0;
+	
+	$LANGUAGE = 0;	// Adicionado:  Marcelo Aparicio 04/06/2020
+	$TARIFF = 0;	// Adicionado:  Marcelo Aparicio 04/06/2020
+	$SUMMARY = "";	// Adicionado:  Marcelo Aparicio 04/06/2020
+	
+	
+}
+
+$form_name=$_POST['form_name'];
+$form_password=$_POST['form_password'];
+$form_email=$_POST['form_email'];
+$form_gender=$_POST['form_gender'];
+$form_school=$_POST['form_school'];
+$form_tutorlevel=$_POST['form_tutorlevel'];
+
+$form_language=$_POST['form_language'];	// Adicionado:  Marcelo Aparicio 04/06/2020
+$form_tariff=$_POST['form_tariff'];		// Adicionado:  Marcelo Aparicio 04/06/2020
+$form_summary=$_POST['form_summary'];	// Adicionado:  Marcelo Aparicio 04/06/2020
+
+if($_POST['USER_TYPE']!="")$USER_TYPE=$_POST['USER_TYPE'];
+
+function autentificar()
+{
+
+global $pagina,$hay_sesion,$USER_CODE,$_SESSION,$modify,$USER_TYPE,$_FILES,$con;
+//echo "linea 1";
+global $form_name,$form_password,$form_email,$form_gender,$form_school,$form_tutorlevel;
+global $form_language, $form_tariff, $form_summary;	// Adicionado:  Marcelo Aparicio 04/06/2020
+//echo "linea 2";
+$mensaje=1;
+
+if($form_name=='' || $form_password=='' || $form_email=="")
+{
+	$mensaje="Incomplete data";
+
+}
+else
+{
+
+  if(!$con)
+  {
+   	$mensaje="It was not possible to connect to database";
+   	//exit();
+  }
+  else
+  {
+
+     $query="SELECT * FROM USERS2 WHERE EMAIL='$form_email'";
+     $resultado=genesis_exec($con,$query);
+     if(!$resultado)
+     {
+         $mensaje="Error en la sentencia SQL";
+	     echo "Sentencia: $query <br>";
+  	     echo "Error: ".mysql_error();
+  	     exit();
+     }
+     else
+     {
+		$fila=genesis_fetch_row($resultado);
+		
+		$form_summary = str_replace(chr(92),"",$form_summary);  // Eliminar caracter back slash.
+		$form_summary = str_replace("'","\'",$form_summary);
+
+         if($fila) //user exists in DB
+	     {
+	      	if($modify)  //For security reasons it is very important to check there is a session (the user logged in) before updating information
+			{	
+				// Adicionado: Campos LANGUAGE, TARIFF, SUMMARY para UPDATE tutor.  Marcelo Aparicio 04/06/2020
+				if ($USER_TYPE == 'TUTOR'){
+					$query="UPDATE USERS2 SET NAME='$form_name',EMAIL='$form_email',PASSWORD=HEX(AES_ENCRYPT('$form_password', UNHEX(SHA2('babel',512)))),GENDER='$form_gender',SCHOOLTYPE='$form_school',TUTORLEVEL='$form_tutorlevel'
+					,LANGUAGE = $form_language
+					,TARIFF = $form_tariff
+					,SUMMARY = '$form_summary'
+					WHERE USERCODE='$USER_CODE'";
+				}else{
+					$query="UPDATE USERS2 SET NAME='$form_name',EMAIL='$form_email',PASSWORD=HEX(AES_ENCRYPT('$form_password', UNHEX(SHA2('babel',512)))),GENDER=$form_gender,SCHOOLTYPE=$form_school
+					,LANGUAGE = $form_language
+					WHERE USERCODE='$USER_CODE'";
+				}
+				$resultado=genesis_exec($con,$query);
+                $mensaje=1;
+				$_SESSION['NAME']=$form_name;	
+				$_SESSION['EMAIL']=$form_email;	
+                $_SESSION['SCHOOLTYPE']=$form_school;				
+			}
+			else
+			{
+				$mensaje="User already exists, please log in"; //he is trying to register (modify==0) a previous user 
+				$pagina="login.htm";		
+			}
+	     }
+	     else  //user does not exist in DB
+	     {               
+	      	if($modify)
+			{
+				$mensaje="User does not exist, please register";
+				$pagina="register.html";		
+			}		
+		    else
+			{	
+				session_start();   	
+				$SESION=session_id();
+				
+				// Adicionado: Agregados campos LANGUAGE, TARIFF, SUMMARY para el tutor. Marcelo Aparicio 04/06/2020
+				if ($USER_TYPE == 'TUTOR'){				
+					$query="INSERT INTO USERS2 (NAME,SIGNUPDATE,EMAIL,PASSWORD,BALANCE,SESSIONID,USERTYPE,GENDER,SCHOOLTYPE,TUTORLEVEL,ACTIVETUTOR,LANGUAGE,
+					TARIFF,SUMMARY) VALUES ('$form_name',NOW(),'$form_email',HEX(AES_ENCRYPT('$form_password', UNHEX(SHA2('babel',512)))), 0,'$SESION','$USER_TYPE',$form_gender,$form_school,$form_tutorlevel,1,
+					$form_language,$form_tariff,'$form_summary')";
+				}else{
+					$query="INSERT INTO USERS2 (NAME,SIGNUPDATE,EMAIL,PASSWORD,BALANCE,SESSIONID,USERTYPE,GENDER,SCHOOLTYPE,ACTIVETUTOR,LANGUAGE) VALUES ('$form_name',NOW(),'$form_email',HEX(AES_ENCRYPT('$form_password', UNHEX(SHA2('babel',512)))),0,'$SESION','$USER_TYPE',$form_gender,$form_school,1, $form_language)";                                    
+				}
+				$resultado=genesis_exec($con,$query);
+				$query="SELECT USERCODE FROM USERS2 WHERE EMAIL='$form_email'";
+				$resultado=genesis_exec($con,$query);
+		 		$USER_CODE=genesis_result($resultado,1);
+				if($USER_CODE!='')
+				{
+					$mensaje=1;      //solo devuelve 1 si el usuario se autentificó con éxito
+					$_SESSION['TYPE']=$USER_TYPE;   	//usar esto si register_globals=off
+					$_SESSION['COD']=$USER_CODE;   	//this will set hay_session to true  
+					$USER_NAME=$form_name;
+					$_SESSION['NAME']=$USER_NAME;	
+                    $_SESSION['SCHOOLTYPE']=$form_school;	
+					//echo "SESSION['COD']=".$_SESSION['COD'];		
+				}		
+				else $mensaje='Database error creating new user';
+			}
+		 }
+		 
+		if($USER_TYPE!="STUDENT")$target_dir = "tutors/";
+		else $target_dir = "students/";
+		
+		if(isset($_FILES['pictureToUpload']))
+		{	
+		
+			$_FILES["pictureToUpload"]["name"]="photo".$USER_CODE.".jpg";	
+			$target_file = $target_dir . basename($_FILES["pictureToUpload"]["name"]);
+			move_uploaded_file($_FILES['pictureToUpload']['tmp_name'], $target_file);
+		}
+		if(isset($_FILES['fileToUpload']))
+		{	
+			$_FILES["pictureToUpload"]["name"]="resume".$USER_CODE.".pdf";	
+			$target_file = $target_dir . basename($_FILES["fileToUpload"]["name"]);
+			move_uploaded_file($_FILES['fileToUpload']['tmp_name'], $target_file);
+		}
+		 
+	  }
+      
+   }
+
+  }
+ 
+return $mensaje;
+}//fin autentificar()
+
+//SECCION PRINCIPAL
+	if($_POST['form_password']!="" && $_POST['form_email']!="")
+    {
+		$res=autentificar();
+		if($res==1)//si se autentificó con éxito va a la página solicitada
+	    {
+              $message="";
+			  
+			 // MAE Inicio de cambio: Marcelo Aparicio : 04/06/2020 
+			  
+			 // if($USER_TYPE=="STUDENT")$pagina="payment.htm";
+             // else $pagina="tutor-subjects.html"; 
+			 // Header("Location:$pagina?login=1");  //esto lo envia a la pagina que solicita
+              //exit();
+              //no muestra la pantalla de login más abajo
+			  //echo 
+			  
+			  // Luego de que el estudiante se ha registrado exitosamente, redireccionamos al formulario de asignaturas.
+			  if($pagina=="" && $_SESSION['TYPE']=="STUDENT") $pagina="subjects.html";  //valor por defecto
+			  if($pagina=="" && $_SESSION['TYPE']=="TUTOR") $pagina="tutor-subjects.html";  //valor por defecto
+			  Header("Location:$pagina");
+			  
+			// MAE Fin de cambio: Marcelo Aparicio : 04/06/2020
+
+        }
+        else
+		{
+			$message=$res;
+			Header("Location:$pagina?message=$res");    
+			
+		}
+        //si llega aqui es porque hubo algun error con la BD
+        //echo "<script language='javascript'>alert('".$res."')</script>";
+        //si no se autentifico con exito debe logearse de nuevo (continua más abajo)
+    }
+
+
+//echo "NAME=$NAME";
+//echo "EMAIL=$$EMAIL";
+//echo "$PASSWORD=$PASSWORD";	 
+genesis_commit($con);
+closeDB($con);	
+
+?>
+<!doctype html>
+<!--[if IE 7 ]>    <html lang="en-gb" class="isie ie7 oldie no-js"> <![endif]-->
+<!--[if IE 8 ]>    <html lang="en-gb" class="isie ie8 oldie no-js"> <![endif]-->
+<!--[if IE 9 ]>    <html lang="en-gb" class="isie ie9 no-js"> <![endif]-->
+<!--[if (gt IE 9)|!(IE)]><!--> <html lang="en-gb" class="no-js"> <!--<![endif]-->
+
+
+<head>
+	<title>xtutor.online</title>
+	
+	<meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+	<meta name="keywords" content="" />
+	<meta name="description" content="" />
+    
+    <!-- Favicon --> 
+	<link rel="shortcut icon" href="images/favicon.html">
+    
+    <!-- this styles only adds some repairs on idevices  -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Google fonts - witch you want to use - (rest you can just remove) -->
+   	<link href='https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic,700,700italic,800,800italic' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css?family=Raleway:100,200,300,400,500,600,700,800,900' rel='stylesheet' type='text/css'>
+    
+    <!--[if lt IE 9]>
+		<script src="https://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+	<![endif]-->
+    
+    <!-- ######### CSS STYLES ######### -->
+	
+    <link rel="stylesheet" href="css/reset.css" type="text/css" />
+	<link rel="stylesheet" href="css/style.css" type="text/css" />
+    
+    <link rel="stylesheet" href="css/font-awesome/css/font-awesome.min.css">
+    
+    <!-- responsive devices styles -->
+	<link rel="stylesheet" media="screen" href="css/responsive-leyouts.css" type="text/css" />
+    
+    <!-- animations -->
+    <link href="js/animations/css/animations.min.css" rel="stylesheet" type="text/css" media="all" />
+    
+  
+    <!-- style switcher -->
+    <link rel = "stylesheet" media = "screen" href = "js/style-switcher/color-switcher.css" />
+    
+    <!-- mega menu -->
+    <link href="js/mainmenu/stickytwo.css" rel="stylesheet">
+    <link href="js/mainmenu/bootstrap.min.css" rel="stylesheet">
+    <link href="js/mainmenu/demo.css" rel="stylesheet">
+    <link href="js/mainmenu/menu.css" rel="stylesheet">
+    
+    <!-- slide panel -->
+    <link rel="stylesheet" type="text/css" href="js/slidepanel/slidepanel.css">
+    
+	<!-- cubeportfolio -->
+	<link rel="stylesheet" type="text/css" href="js/cubeportfolio/cubeportfolio.min.css">
+    
+	<!-- tabs -->
+    <link rel="stylesheet" type="text/css" href="js/tabs/assets/css/responsive-tabs.css">
+    <link rel="stylesheet" type="text/css" href="js/tabs/assets/css/responsive-tabs2.css">
+    <link rel="stylesheet" type="text/css" href="js/tabs/assets/css/responsive-tabs3.css">
+
+	<!-- carousel -->
+    <link rel="stylesheet" href="js/carousel/flexslider.css" type="text/css" media="screen" />
+ 	<link rel="stylesheet" type="text/css" href="js/carousel/skin.css" />
+    
+    <!-- progressbar -->
+  	<link rel="stylesheet" href="js/progressbar/ui.progress-bar.css">
+    
+    <!-- accordion -->
+    <link rel="stylesheet" href="js/accordion/accordion.css" type="text/css" media="all">
+    
+    <!-- Lightbox -->
+    <link rel="stylesheet" type="text/css" href="js/lightbox/jquery.fancybox.css" media="screen" />
+	
+    <!-- forms -->
+    <link rel="stylesheet" href="js/form/sky-forms.css" type="text/css" media="all">
+ 
+</head>
+
+<body>
+
+<div class="site_wrapper">
+
+
+<?include("header.htm");?>
+<div class="clearfix"></div>
+
+<div class="page_title2">
+<div class="container">
+<?
+    
+   if($modify) $title="Modify account"; 
+   else 
+   {
+	 if ($USER_TYPE=="STUDENT")$title="Registration"; 
+	 else $title="Application";
+   }
+   ?>
+       <div class='title'><h1><?echo $title;?></h1></div>
+        
+</div>
+</div><!-- end page title --> 
+
+<div class="clearfix"></div>
+
+<div class="container">
+
+	<div class="content_fullwidth">
+    
+		
+        <div class="reg_form">
+			<form id="form1" class="sky-form" method="post" action="register.html" enctype="multipart/form-data">
+				<header><?echo $title;?> form</header>
+				<input type=hidden name="USER_TYPE" value='<?echo $USER_TYPE;?>'>
+				
+				<!-- MAE. 07/06/2020. Creado para separar formulario en dos -->
+				<div id="div_campos" name="div_campos" style="display:block;">  
+				<!-- required data-->
+				<fieldset>					
+					<section><strong>Name
+						<label class="input">
+							<i class="icon-append icon-user"></i>
+							<input type="text" name="form_name" placeholder="First name" value="<?echo $NAME?>">
+							<b class="tooltip tooltip-bottom-right">Needed to enter the account</b>
+						</label>
+					</section>
+					
+					<section><strong>Email address
+						<div id="error_msg"></div>
+						<label class="input">
+							<i class="icon-append icon-envelope-alt"></i>
+							<input type="email" id="form_email"
+								   name="form_email" placeholder="Email address" value="<?echo $EMAIL?>">
+							<b class="tooltip tooltip-bottom-right">Needed to verify your account</b>
+						</label>
+					</section>
+					
+					<section><strong>Password
+						<label class="input">
+							<i class="icon-append icon-lock"></i>
+							<input type="password" name="form_password" placeholder="Password" id="password" value="<?echo $PASSWORD?>">
+							<b class="tooltip tooltip-bottom-right">Don't forget your password</b>
+						</label>
+					</section>
+					
+					<section><strong>Password confirmation
+						<label class="input">
+							<i class="icon-append icon-lock"></i>
+							<input type="password" name="form_password2" placeholder="Confirm password" value="<?echo $PASSWORD?>">
+							<b class="tooltip tooltip-bottom-right">Don't forget your password</b>
+						</label>
+					</section>
+				</fieldset>
+				<!-- demographic data-->	
+				<fieldset>
+					<section><strong>Gender
+						<label class="select">
+							<select name="form_gender">
+								<option value="" selected disabled>Gender</option>
+								<option value="0" <?if($GENDER==0)echo "SELECTED";?>>Male</option>
+								<option value="1" <?if($GENDER==1)echo "SELECTED";?>>Female</option>
+								<option value="2" <?if($GENDER==2)echo "SELECTED";?>>Do not want to disclose</option>
+							</select>
+							<i></i>
+						</label>
+					</section>
+					
+					
+					<!--  MAE Inicio Cambios ingresados: Marcelo Aparicio : 04/06/2020 -->
+					<!--  Insertar un select  para el Idioma del tutor -->
+					<!--  MAE Marcelo Aparicio: 05/06/2020 : habilitar el campo también para el estudiante -->
+					<section><strong>Language</strong>
+						<label class="select">
+							<select name="form_language">
+								<option value="" selected disabled>Language</option>
+								<option value="0" <?php if($LANGUAGE==0)echo "SELECTED";?>>English</option>
+								<option value="1" <?php if($LANGUAGE==1)echo "SELECTED";?>>Spanish</option>
+							</select>
+							<i></i>
+						</label>
+					</section>
+					<!--  MAE Fin Cambios ingresados: Marcelo Aparicio : 04/06/2020 -->
+					
+					<?php if($USER_TYPE=="TUTOR"):?>
+					<section><strong>Tutor level</strong>
+						<label class="select">
+							<select name="form_tutorlevel">
+								<option value="" selected disabled>TUTOR LEVEL</option>
+								<option value="0" <?php if($TUTORLEVEL==0)echo "SELECTED";?>>Entry level</option>
+								<option value="1" <?php if($TUTORLEVEL==1)echo "SELECTED";?>>Experienced</option>
+							</select>
+							<i></i>
+						</label>
+					</section>
+					<?php endif;?>
+					<section><strong>School level
+						<label class="select">
+							<select name="form_school">
+								<option value="" selected disabled>School Level</option>
+								<?
+								if($USER_TYPE=="STUDENT")
+								{
+									for ($i=0;$i<3;$i++)
+									{
+										if($SCHOOL==$i)
+											echo "<option value='$i' SELECTED>".$SCHOOLTYPE_LIST[$i]."</option>";
+										else
+											echo "<option value='$i'>".$SCHOOLTYPE_LIST[$i]."</option>";
+									}
+								}
+								else
+								{
+									for ($i=0;$i<5;$i++)
+									{
+										if($SCHOOL==$i)
+											echo "<option value='$i' SELECTED>".$TUTOR_LEVEL[$i]."</option>";
+										else
+											echo "<option value='$i'>".$TUTOR_LEVEL[$i]."</option>";
+									}
+								}
+								?>
+							</select>
+							<i></i>
+						</label>
+					</section>
+
+					<!--  MAE Inicio Cambios ingresados: Marcelo Aparicio : 04/06/2020 -->
+					<!--  Insertar un select  para el Idioma del tutor -->					
+					<?php if($USER_TYPE=="TUTOR"):?>
+					
+					<section><strong>Charge per hour
+						<label class="input">
+							<i class="icon-append icon-money"></i>
+							<input 	type="number" name="form_tariff" placeholder="Tariff per hour" 
+									value="<?echo $TARIFF?>" min = "0.01" step="0.01">
+							<b class="tooltip tooltip-bottom-right">Tariff per hour</b>
+						</label>
+					</section>
+
+					<section><strong>Summary
+						<label class="textarea">
+							<i class="icon-append icon-file"></i>
+							<textarea 
+								rows="4" cols="50" maxlength="2000"
+								name="form_summary" placeholder="Add a short summary about you."><?echo $SUMMARY?></textarea>
+							<b class="tooltip tooltip-bottom-right">Add a short summary about you (2000 characters)</b>
+						</label>
+					</section>
+					
+					<?php endif;?>
+					<!--  MAE Fin Cambios ingresados: Marcelo Aparicio : 04/06/2020 -->
+					
+					<?if($USER_TYPE!="STUDENT")
+					{?>
+						<section><strong>Resume (required) (pdf format)
+						<label class="input">
+						 <input type="file" name="fileToUpload" id="fileToUpload">							
+						</label>
+						</section>									
+					<?}?>
+					<section><strong>Picture <?if($USER_TYPE!="STUDENT") echo "(required)";else echo "(required)";?> (jpg format 140x150 px)   
+					<label class="input">
+					<input type="file" name="pictureToUpload" id="pictureToUpload">							
+					</label>
+					</section>
+					
+					<section>
+						<button class="button" onclick=validate();>Next</button>
+					</section>
+					
+				</div>	<!-- div_campos -->
+				
+				<!-- MAE. 07/06/2020. Creado para separar formulario en dos -->
+				<div id="div_terminos" name="div_terminos" style="display:none"> 
+					<section>
+					<?if ($USER_TYPE=="STUDENT")
+					{?>
+					<p align=center><b>Terms and Conditions</b></p>
+					<br><p align=justify>(1) Xtutor.online is not responsible for student's academic honesty. The student is the sole responsible for it. Xtutor.online accepts all requests under this understanding. 
+					<br><p align=justify>(2) Students are welcome to provide their feedback and reviews in our website and facebook page and also tutors have the rigth to reply to those comments in the same media.
+					<br><p align=justify>(3) Students and tutors must be respectful to each other all the time. Xtutor.online may block tutors and students that do not follow this policy.
+					<br><p align=justify>(4) Xtutor.online does not keep record of your credit card information. 
+					<br><p align=justify>(5) Xtutor.online only keeps your email address for internal communications and does not share this information with tutors or any other website or company.
+					<br><p align=justify>(6) Students can ask for a refund anytime (without the need to provide a reason) which will be processed (without questioning) in about 5 days. Students that request refunds more than once may be reviewed and may be blocked to use the service again.
+					<br><p align=justify>(7) Students and tutors can not exchange personal or contact information.
+					<br><p align=justify>(8) Students must be 14 years old or older to use Xtutor.online.
+					<?}else{?>
+					<p align=center><b>Minimum requirements:</b></p>
+					<br><p align=justify>(1) You must be at least 18 years old. 
+					<br><p align=justify>(2) You must be at least a senior in college or a graduate.
+					<br><p align=justify>(3) You must have at least 1 semester teaching/tutoring experience. 
+					<br><p align=justify>(4) You must be willing to pass a background check.</p>
+					<br>
+					<p align=center><b>What we offer:</b></p>
+					<br><p align=justify>The highest starting rate and other great benefits that we will communicate to you later.
+					<?}?>
+					</section>
+					<section>
+						<label class="checkbox"><input type="checkbox" name="terms" id="terms"><i></i><?if ($USER_TYPE=="STUDENT")echo "I have read and I agree with all Terms and Conditions above"; else echo "I certify I comply with the minimum requirements";?></label>
+					</section>
+					
+					<footer>
+						<div class="col-md-6">
+						<button onclick=validate(); class="button pull-left">Submit</button>
+						</div>
+						<div class="col-md-6">
+						<input type="button" value="Back" onclick="goBack()" class="button button-secondary pull-right">
+						</div>
+					</footer>
+				</div>  <!-- div_terminos -->
+				</fieldset>
+			</form>			
+		</div>
+        
+	</div>
+
+</div><!-- end content area -->
+
+<div class="clearfix margin_top7"></div>
+<?include("footer.htm")?>
+</div>
+    
+<!-- ######### JS FILES ######### -->
+<!-- get jQuery from the google apis -->
+<script type="text/javascript" src="js/universal/jquery.js"></script>
+
+<!-- style switcher -->
+<script src="js/style-switcher/jquery-1.js"></script>
+<script src="js/style-switcher/styleselector.js"></script>
+
+<!-- animations -->
+<script src="js/animations/js/animations.min.js" type="text/javascript"></script>
+<script src="js/animations/js/smoothscroll.js" type="text/javascript"></script>
+
+<!-- slide panel -->
+<script type="text/javascript" src="js/slidepanel/slidepanel.js"></script>
+
+<!-- mega menu -->
+<script src="js/mainmenu/bootstrap.min.js"></script> 
+<script src="js/mainmenu/customeUI.js"></script> 
+
+<!-- jquery jcarousel -->
+<script type="text/javascript" src="js/carousel/jquery.jcarousel.min.js"></script>
+
+<!-- scroll up -->
+<script src="js/scrolltotop/totop.js" type="text/javascript"></script>
+
+<!-- tabs -->
+<script src="js/tabs/assets/js/responsive-tabs.min.js" type="text/javascript"></script>
+
+<!-- jquery jcarousel -->
+<script type="text/javascript">
+(function($) {
+ "use strict";
+
+	jQuery(document).ready(function() {
+			jQuery('#mycarouselthree').jcarousel();
+	});
+	
+})(jQuery);
+</script>
+
+<!-- accordion -->
+<script type="text/javascript" src="js/accordion/custom.js"></script>
+
+<!-- sticky menu -->
+<script type="text/javascript" src="js/mainmenu/sticky.js"></script>
+<script type="text/javascript" src="js/mainmenu/modernizr.custom.75180.js"></script>
+
+<script src="js/form/jquery.form.min.js"></script>
+<script src="js/form/jquery.validate.min.js"></script>
+<script src="js/form/jquery.modal.js"></script>
+
+<script type="text/javascript">
+function goBack()
+{
+	document.getElementById("div_campos").style.display = "block";
+	document.getElementById("div_terminos").style.display = "none";
+}
+</script>
+
+<script type="text/javascript">
+(function($) {
+ "use strict";
+
+	$(function()
+	{
+		// Validation		
+		$("#form1").validate(
+		{	
+		
+			// Rules for form validation
+			// MAE Reglas agregadas para language y tariff 04/06/2020
+			rules:
+			{
+				form_name:
+				{
+					required: true
+				},
+				form_email:
+				{
+					required: true,
+					email: true
+				},
+				form_password:
+				{
+					required: true,
+					minlength: 3,
+					maxlength: 20
+				},
+				form_password2:
+				{
+					required: true,
+					minlength: 3,
+					maxlength: 20,
+					equalTo: '#password'
+				},
+				form_gender:
+				{
+					required: true					
+				},
+				form_level:
+				{
+					required: true
+				},
+				terms:
+				{
+					required: true
+				},
+				form_language:
+				{
+					required: true
+				},
+				form_tariff:
+				{
+					required: true,
+					min: 0.01
+				},
+				form_summary: {
+					required: true,
+					maxlength: 2000
+				},
+				pictureToUpload: {
+					required: true,
+				}
+			},
+			
+			// Messages for form validation
+			// MAE reglas agregadas para language y tariff
+			messages:
+			{
+				form_name:
+				{
+					required: 'Please enter your name'
+				},
+				form_email:
+				{
+					required: 'Please enter your email address',
+					email: 'Please enter a VALID email address'
+				},
+				password:
+				{
+					required: 'Please enter your password'
+				},
+				password2:
+				{
+					required: 'Please enter your password one more time',
+					equalTo: 'Please enter the same password as above'
+				},
+				
+				form_gender:
+				{
+					required: 'Please select your gender'
+					
+				},
+				form_level:
+				{
+					required: 'Please select your school level'
+				},
+				terms:
+				{
+					required: 'You must agree with Terms and Conditions'
+				},
+				form_language:
+				{
+					required: 'You must select a language'
+				},
+				form_tariff:
+				{
+					required: 'Please enter your tariff per hour',
+					min: 'Tariff must be greater than 0'
+				},
+				form_summary: {
+					required: 'Please enter your summary',
+					maxlength: 'Max length of summary must be 2000 characters'
+				},
+				pictureToUpload: {
+					required: 'Please, upload your image picture.',
+				}
+			},
+			// MAE. 07/06/2020. Modificado para garantizar la validación y navegabilida entre las partes del formulario.
+			submitHandler: function(form){
+				if (document.getElementById("terms").checked) {
+					form.submit();
+				} else {
+					document.getElementById("div_campos").style.display = "none";
+					document.getElementById("div_terminos").style.display = "block";
+				}
+			},
+			// Do not change code below
+			errorPlacement: function(error, element)
+			{
+				error.insertAfter(element.parent());
+			}
+						
+		});
+		
+			
+	});			
+
+})(jQuery);
+</script>
+
+<!-- cubeportfolio -->
+<script type="text/javascript" src="js/cubeportfolio/jquery.cubeportfolio.min.js"></script>
+<script type="text/javascript" src="js/cubeportfolio/main.js"></script>
+<script type="text/javascript" src="js/cubeportfolio/main5.js"></script>
+<script type="text/javascript" src="js/cubeportfolio/main6.js"></script>
+
+<!-- carousel -->
+<script defer src="js/carousel/jquery.flexslider.js"></script>
+<script defer src="js/carousel/custom.js"></script>
+
+<!-- lightbox -->
+<script type="text/javascript" src="js/lightbox/jquery.fancybox.js"></script>
+<script type="text/javascript" src="js/lightbox/custom.js"></script>
+
+<!-- validate_user_email -->
+<script src="validate_user_email.js"></script>
+
+<!-- PHP Message -->
+<?php 
+if($_GET['message']!="")$message=$_GET['message'];
+if($message!="")echo "<script>alert('$message');</script>";  
+?>
+
+</body>
+
+</html>

@@ -1,0 +1,278 @@
+<?
+ include("security/header.php");
+ $con=openDB();
+ if($hay_sesion) $modify=1;
+ else $modify=0;
+ //if modify then $USER_TYPE already has the type
+ if(!$modify) 
+ {
+    if($_GET['type']=='tutor')
+		$USER_TYPE='TUTOR';
+	else
+		$USER_TYPE='STUDENT';
+ }
+if($modify==1)
+{
+	$query="SELECT NAME,EMAIL,AES_DECRYPT(UNHEX(PASSWORD),UNHEX(SHA2('babel',512))),SCHOOLTYPE,GENDER FROM USERS WHERE USERCODE='$USER_CODE'";
+	//echo "query=$query";
+	$resultado=genesis_exec($con,$query);
+    $NAME=genesis_result($resultado,1);
+	$EMAIL=genesis_result($resultado,2);
+	$PASSWORD=genesis_result($resultado,3);
+	$SCHOOL=genesis_result($resultado,4);
+	$GENDER=genesis_result($resultado,5);
+}
+else
+{
+	$NAME="";
+	$EMAIL="";
+	$PASSWORD="";
+	$SCHOOL=0;
+	$GENDER=0;
+    Header("Location:login.htm");	
+}
+
+$form_field=$_POST['form_field'];  
+$form_school=$_POST['form_school'];  
+$form_newsubject=$_POST['form_newsubject'];  
+
+if($form_field!='' && $form_school!="" && $form_newsubject!="")
+{
+	$form_newsubject=strtoupper(substr($form_newsubject,0,1)).strtolower(substr($form_newsubject,1));
+	$query="INSERT INTO SUBJECTS (DESCRIPTION,FIELD,SCHOOLTYPE) VALUES ('$form_newsubject',$form_field,$form_school)";
+	$resultado=genesis_exec($con,$query);
+}
+
+
+
+if($form_field!='' && $form_school!="") //second time (page reloaded)
+{
+    $query="SELECT SUBJECTCODE,DESCRIPTION FROM SUBJECTS WHERE FIELD=$form_field AND SCHOOLTYPE=$form_school ORDER BY 2";
+	$resultado=genesis_exec($con,$query);
+	$i=0;
+	while(genesis_fetch_row($resultado))
+    { 	
+		$SUBJECTS_CODES[$i]=genesis_result($resultado,1);
+		$SUBJECTS_NAMES[$i]=genesis_result($resultado,2); 
+		//echo($SUBJECTS_CODES[$i]);
+		$i++;	
+	}	
+}
+
+genesis_commit($con);
+closeDB($con);	
+
+?>
+<!doctype html>
+<!--[if IE 7 ]>    <html lang="en-gb" class="isie ie7 oldie no-js"> <![endif]-->
+<!--[if IE 8 ]>    <html lang="en-gb" class="isie ie8 oldie no-js"> <![endif]-->
+<!--[if IE 9 ]>    <html lang="en-gb" class="isie ie9 no-js"> <![endif]-->
+<!--[if (gt IE 9)|!(IE)]><!--> <html lang="en-gb" class="no-js"> <!--<![endif]-->
+
+
+<head>
+	<title>xtutor.online</title>
+	
+	<meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+	<meta name="keywords" content="" />
+	<meta name="description" content="" />
+    
+    <!-- Favicon --> 
+	<link rel="shortcut icon" href="images/favicon.html">
+    
+    <!-- this styles only adds some repairs on idevices  -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Google fonts - witch you want to use - (rest you can just remove) -->
+   	<link href='https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic,700,700italic,800,800italic' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css?family=Raleway:100,200,300,400,500,600,700,800,900' rel='stylesheet' type='text/css'>
+    
+    <!--[if lt IE 9]>
+		<script src="https://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+	<![endif]-->
+       
+    <!-- ######### CSS STYLES ######### -->
+	
+    <link rel="stylesheet" href="css/reset.css" type="text/css" />
+	<link rel="stylesheet" href="css/style.css" type="text/css" />
+    
+    <link rel="stylesheet" href="css/font-awesome/css/font-awesome.min.css">
+    
+    <!-- responsive devices styles -->
+	<link rel="stylesheet" media="screen" href="css/responsive-leyouts.css" type="text/css" />
+    
+    <!-- animations -->
+    <link href="js/animations/css/animations.min.css" rel="stylesheet" type="text/css" media="all" />
+    
+  
+    <!-- style switcher -->
+    <link rel = "stylesheet" media = "screen" href = "js/style-switcher/color-switcher.css" />
+    
+    <!-- mega menu -->
+    <link href="js/mainmenu/stickytwo.css" rel="stylesheet">
+    <link href="js/mainmenu/bootstrap.min.css" rel="stylesheet">
+    <link href="js/mainmenu/demo.css" rel="stylesheet">
+    <link href="js/mainmenu/menu.css" rel="stylesheet">
+    
+    <!-- slide panel -->
+    <link rel="stylesheet" type="text/css" href="js/slidepanel/slidepanel.css">
+    
+	<!-- cubeportfolio -->
+	<link rel="stylesheet" type="text/css" href="js/cubeportfolio/cubeportfolio.min.css">
+    
+	<!-- tabs -->
+    <link rel="stylesheet" type="text/css" href="js/tabs/assets/css/responsive-tabs.css">
+    <link rel="stylesheet" type="text/css" href="js/tabs/assets/css/responsive-tabs2.css">
+    <link rel="stylesheet" type="text/css" href="js/tabs/assets/css/responsive-tabs3.css">
+
+	<!-- carousel -->
+    <link rel="stylesheet" href="js/carousel/flexslider.css" type="text/css" media="screen" />
+ 	<link rel="stylesheet" type="text/css" href="js/carousel/skin.css" />
+    
+    <!-- progressbar -->
+  	<link rel="stylesheet" href="js/progressbar/ui.progress-bar.css">
+    
+    <!-- accordion -->
+    <link rel="stylesheet" href="js/accordion/accordion.css" type="text/css" media="all">
+    
+    <!-- Lightbox -->
+    <link rel="stylesheet" type="text/css" href="js/lightbox/jquery.fancybox.css" media="screen" />
+	
+    <!-- forms -->
+    <link rel="stylesheet" href="js/form/sky-forms.css" type="text/css" media="all">
+   
+    
+</head>
+
+<body>
+
+
+<div class="site_wrapper">
+
+
+<?include("header.htm");?>
+<div class="clearfix"></div>
+
+<div class="page_title2">
+<div class="container">
+<?
+    
+   if($modify) $title="Add subjects";    
+   ?>
+       <div class='title'><h1><?echo $title;?></h1></div>
+        
+</div>
+</div><!-- end page title --> 
+<div class="clearfix"></div>
+<div class="container">
+<div  class="content_fullwidth">
+            <div class="login_form">
+			<form id="form1" class="sky-form" method="post" onsubmit="return validateForm(event)" action="add-subjects.htm">
+				<header>Add subject:</header>
+				
+				<fieldset>	
+				    
+					<section><strong>Field of study
+						<label class="select">
+							<select id="form_field" name="form_field" onchange="fieldselected()">
+								<option value="" selected disabled>Field of study</option>
+								<?
+								for ($i=0;$i<4;$i++)
+								{
+									if($form_field!="" && $form_field==$i)
+										echo "<option selected value='$i'>".$FIELDS_LIST[$i]."</option>";
+									else
+										echo "<option value='$i'>".$FIELDS_LIST[$i]."</option>";
+								}					
+								?>														
+								
+							</select>
+							<i></i>
+						</label>
+					</section>
+					
+					<section><strong>School level
+						<label class="select">
+							<select id="form_school" name="form_school" onchange="fieldselected()" >
+								<option value="" selected disabled>School Level</option>
+								<?
+								for ($i=0;$i<3;$i++)
+								{
+										if($form_school!="" && $form_school==$i)
+											echo "<option value='$i' SELECTED>".$SCHOOLTYPE_LIST[$i]."</option>";
+										else
+											echo "<option value='$i'>".$SCHOOLTYPE_LIST[$i]."</option>";
+								}
+								
+								?>
+							</select>
+							<i></i>
+						</label>
+					</section>
+				
+				<section><strong>Subjects
+						<label class="input">
+								<?
+								for ($i=0;$i<sizeof($SUBJECTS_NAMES);$i++)
+								{
+								  echo "<input disabled placeholder='$SUBJECTS_NAMES[$i]'>";														
+								}   
+								?>
+							
+						</label>
+					</section>
+				<section><strong>New subject
+						<label class="input">
+						<input name="form_newsubject">													
+						</label>
+					</section>
+				<p>Note: If you insert a wrong name just add (again) the right one and send us an e-mail so we can delete the wrong item.</p>				
+				</fieldset>
+				<footer>
+					<div class="sky-form" style="display: flex; justify-content: center;">
+                    <button type="submit" id="requestbutton" class="button" >Add new subject</button>
+                    </div>
+					
+				</footer>
+			</form>
+			</div>
+		</div>
+        
+		
+	</div>
+	
+	<?include("footer.htm");?>
+</div>	
+
+    
+<script>
+function reload()
+{
+	location.reload(); 
+}
+
+//the form calls the same page to search the lesson
+function validateForm(e)
+{
+  
+  if(document.getElementById("form_newsubject").value=='')
+  {
+	alert('Enter the new subject');
+	return false;
+  }
+  
+   return true;
+}
+
+function fieldselected()
+{
+	f=document.getElementById("form1");
+	field=document.getElementById("form_field");
+	school=document.getElementById("form_school");
+	if(field!="" && school!="")f.submit();
+}
+</script>
+
+</body>
+</html>

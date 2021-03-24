@@ -1,0 +1,53 @@
+<?php
+include("security/header.php"); //header reads the table and extract LESSON_CODEVAR
+$lesson=$_GET['lesson'];  //lesson already exists 
+$con=openDB();
+$query="SELECT LESSONCODEVAR FROM LESSONS WHERE LESSONCODE=$lesson";
+$result=genesis_exec($con,$query);
+$code=genesis_result($result,1);
+genesis_commit($con);
+closeDB($con);
+?>
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="xtutor.css">
+<title>xtutor</title>
+<script>
+<? 
+if ($lesson=='') 
+{
+	echo "window.close();";
+}
+?>
+var lesson=<?echo $lesson;?>;
+var code=<?echo $code;?>;
+var source1='pastlessonwindowheader.htm?lesson='+lesson;
+var source2='https://www.twiddla.com/api/start.aspx?sessionid='+code+'&autostart=autostart&hide=invite,profile,welcome,email,widgets,etherpad,documents,images,roomsettings,logo';
+</script>
+</head>
+<body>
+<!--  if the code exists then the lesson exists previously, we dont need to create another lesson -->
+<!--  <iframe id="iframe1" src="lessonwindowheader.htm?sessionid=<?echo $code;?>" width=100% height=90>  -->
+<iframe id="iframe1" width=100% height=100>
+  <p>Your browser does not support iframes.</p>
+  
+</iframe>
+<script>
+//alert(source1);
+document.getElementById("iframe1").src = source1;
+</script>
+<iframe id="iframe2" width=100% height=530>
+<!--<iframe id="iframe2" src="https://app.liveboard.online" width=100% height=800>-->
+  <p>Your browser does not support iframes.</p>
+  
+</iframe>
+<script>
+//alert(source2);
+document.getElementById("iframe2").src = source2;
+</script>
+
+</body>
+</html>
+
+

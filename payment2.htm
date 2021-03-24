@@ -1,0 +1,355 @@
+<?
+require_once('stripe-php/init.php');
+
+include("security/header2.php");
+//$RATE is in constants
+$con=openDB();
+
+
+
+// Token is created using Checkout or Elements!
+// Get the payment token ID submitted by the form:
+$token = $_POST['stripeToken'];
+$stripeEmail = $_POST['stripeEmail'];
+$form_studentcode=$_POST['form_studentcode'];
+$form_minutes=$_POST['form_minutes'];
+
+
+// Set your secret key: remember to change this to your live secret key in production
+// See your keys here: https://dashboard.stripe.com/account/apikeys
+
+\Stripe\Stripe::setApiKey("sk_live_Vsf8WDDJMvjGyvdo8oqyuQr7");
+
+//echo "stripeToken=$token"; 
+
+if($token!="")
+{
+	if($form_minutes==30)
+		$CHARGE=$RATE;
+	else 	
+		$CHARGE=2*$RATE;
+	$CHARGE=$CHARGE."00"; //adding cents
+	//echo $CHARGE; exit();
+	$CHARGERESULT = \Stripe\Charge::create([
+    'amount' => $CHARGE,
+    'currency' => 'usd',
+    'description' => $form_minutes.' minutes of online tutoring',
+    'source' => $token,
+	'capture' => 'true',
+	'statement_descriptor' => 'xtutor '.$form_minutes.' minutes',
+	'receipt_email' => $stripeEmail
+	]);
+}
+else
+{
+	$message="The token was not send";
+}
+$obj=$CHARGERESULT;
+if($obj->status=="succeeded")
+{	
+	$query="INSERT INTO PAYMENTS (USERCODE,DATE,MINUTES,RATEFOR30,CHARGE) VALUES ($form_studentcode,NOW(),$form_minutes,$RATE,$CHARGE/100)";
+	$resultado=genesis_exec($con,$query);
+	$query="UPDATE USERS2 SET BALANCE=BALANCE+$form_minutes WHERE USERCODE=$form_studentcode";
+	$resultado=genesis_exec($con,$query);
+	$message="";
+}
+
+genesis_commit($con);
+closeDB($con);	
+
+?>
+<!doctype html>
+<!--[if IE 7 ]>    <html lang="en-gb" class="isie ie7 oldie no-js"> <![endif]-->
+<!--[if IE 8 ]>    <html lang="en-gb" class="isie ie8 oldie no-js"> <![endif]-->
+<!--[if IE 9 ]>    <html lang="en-gb" class="isie ie9 no-js"> <![endif]-->
+<!--[if (gt IE 9)|!(IE)]><!--> <html lang="en-gb" class="no-js"> <!--<![endif]-->
+
+<head>
+	<title>xtutor.online</title>
+	
+	<meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+	<meta name="keywords" content="" />
+	<meta name="description" content="" />
+    
+    <!-- Favicon --> 
+	<link rel="shortcut icon" href="images/favicon.html">
+    
+    <!-- this styles only adds some repairs on idevices  -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Google fonts - witch you want to use - (rest you can just remove) -->
+   	<link href='https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic,700,700italic,800,800italic' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css?family=Raleway:100,200,300,400,500,600,700,800,900' rel='stylesheet' type='text/css'>
+    
+    <!--[if lt IE 9]>
+		<script src="https://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+	<![endif]-->
+    
+    <!-- ######### CSS STYLES ######### -->
+	
+    <link rel="stylesheet" href="css/reset.css" type="text/css" />
+	<link rel="stylesheet" href="css/style.css" type="text/css" />
+    
+    <link rel="stylesheet" href="css/font-awesome/css/font-awesome.min.css">
+    
+    <!-- responsive devices styles -->
+	<link rel="stylesheet" media="screen" href="css/responsive-leyouts.css" type="text/css" />
+    
+    <!-- animations -->
+    <link href="js/animations/css/animations.min.css" rel="stylesheet" type="text/css" media="all" />
+    
+<!-- just remove the below comments witch color skin you want to use -->
+    <!--<link rel="stylesheet" href="css/colors/red.css" />-->
+    <!--<link rel="stylesheet" href="css/colors/blue.css" />-->
+    <!--<link rel="stylesheet" href="css/colors/cyan.css" />-->
+    <!--<link rel="stylesheet" href="css/colors/orange.css" />-->
+    <!--<link rel="stylesheet" href="css/colors/lightblue.css" />-->
+    <!--<link rel="stylesheet" href="css/colors/pink.css" />-->
+    <!--<link rel="stylesheet" href="css/colors/purple.css" />-->
+    <!--<link rel="stylesheet" href="css/colors/bridge.css" />-->
+    <!--<link rel="stylesheet" href="css/colors/slate.css" />-->
+    <!--<link rel="stylesheet" href="css/colors/yellow.css" />-->
+    <!--<link rel="stylesheet" href="css/colors/darkred.css" />-->
+
+<!-- just remove the below comments witch bg patterns you want to use --> 
+    <!--<link rel="stylesheet" href="css/bg-patterns/pattern-default.css" />-->
+    <!--<link rel="stylesheet" href="css/bg-patterns/pattern-one.css" />-->
+    <!--<link rel="stylesheet" href="css/bg-patterns/pattern-two.css" />-->
+    <!--<link rel="stylesheet" href="css/bg-patterns/pattern-three.css" />-->
+    <!--<link rel="stylesheet" href="css/bg-patterns/pattern-four.css" />-->
+    <!--<link rel="stylesheet" href="css/bg-patterns/pattern-five.css" />-->
+    <!--<link rel="stylesheet" href="css/bg-patterns/pattern-six.css" />-->
+    <!--<link rel="stylesheet" href="css/bg-patterns/pattern-seven.css" />-->
+    <!--<link rel="stylesheet" href="css/bg-patterns/pattern-eight.css" />-->
+    <!--<link rel="stylesheet" href="css/bg-patterns/pattern-nine.css" />-->
+    <!--<link rel="stylesheet" href="css/bg-patterns/pattern-ten.css" />-->
+    <!--<link rel="stylesheet" href="css/bg-patterns/pattern-eleven.css" />-->
+    <!--<link rel="stylesheet" href="css/bg-patterns/pattern-twelve.css" />-->
+    <!--<link rel="stylesheet" href="css/bg-patterns/pattern-thirteen.css" />-->
+    
+    <!-- style switcher -->
+    <link rel = "stylesheet" media = "screen" href = "js/style-switcher/color-switcher.css" />
+    
+    <!-- mega menu -->
+    <link href="js/mainmenu/stickytwo.css" rel="stylesheet">
+    <link href="js/mainmenu/bootstrap.min.css" rel="stylesheet">
+    <link href="js/mainmenu/demo.css" rel="stylesheet">
+    <link href="js/mainmenu/menu.css" rel="stylesheet">
+    
+    <!-- slide panel -->
+    <link rel="stylesheet" type="text/css" href="js/slidepanel/slidepanel.css">
+    
+	<!-- cubeportfolio -->
+	<link rel="stylesheet" type="text/css" href="js/cubeportfolio/cubeportfolio.min.css">
+    
+	<!-- tabs -->
+    <link rel="stylesheet" type="text/css" href="js/tabs/assets/css/responsive-tabs.css">
+    <link rel="stylesheet" type="text/css" href="js/tabs/assets/css/responsive-tabs2.css">
+    <link rel="stylesheet" type="text/css" href="js/tabs/assets/css/responsive-tabs3.css">
+
+	<!-- carousel -->
+    <link rel="stylesheet" href="js/carousel/flexslider.css" type="text/css" media="screen" />
+ 	<link rel="stylesheet" type="text/css" href="js/carousel/skin.css" />
+    
+    <!-- progressbar -->
+  	<link rel="stylesheet" href="js/progressbar/ui.progress-bar.css">
+    
+    <!-- accordion -->
+    <link rel="stylesheet" href="js/accordion/accordion.css" type="text/css" media="all">
+    
+    <!-- Lightbox -->
+    <link rel="stylesheet" type="text/css" href="js/lightbox/jquery.fancybox.css" media="screen" />
+	
+    <!-- forms -->
+    <link rel="stylesheet" href="js/form/sky-forms.css" type="text/css" media="all">
+    
+ 
+</head>
+
+<body>
+
+
+<div class="site_wrapper">
+
+
+<?include("header2.htm");?>
+<div class="clearfix"></div>
+	
+<div class="page_title2">
+<div class="container">
+
+    <div class="title"><h1>Add minutes</h1></div>
+    
+    <!--<div class="pagenation">&nbsp;<a href="index.html">Home</a> <i>/</i> <a href="#">Pages</a> <i>/</i> Login Form</div>-->
+    
+</div>
+</div><!-- end page title -->  
+
+<div class="clearfix"></div>
+
+<div class="container">
+
+	<div class="content_fullwidth">
+    
+		
+      <div class="login_form">		
+			<form id="sky-form" class="sky-form" method="post" action="payment2.htm">
+				<header>Add minutes</header>
+				
+				<fieldset>					
+					<section>
+						<div class="row">
+							<label class="label col col-4">Options</label>
+							<div class="col col-8">
+								<label class="input">
+									<select id="minutes">
+									<option value=30> 30 minutes for $9.00</p>
+									<option value=60> 60 minutes for $18.00</p>
+									</select>
+								</label>
+							</div>
+						</div>
+					</section>
+					<input type="hidden" name="stripeToken" >
+										
+				</fieldset>
+				<footer>
+					<div align="center">
+                    <button id="paybutton" type="button" class="button" onclick="openpayment()">Purchase minutes</button>
+                    </div>
+					
+				</footer>
+			</form>			
+		</div>
+        
+		
+	</div>
+
+</div><!-- end content area -->
+
+<?include("footer.htm");?>
+
+</div>
+
+    
+<!-- ######### JS FILES ######### -->
+<!-- get jQuery from the google apis -->
+<script type="text/javascript" src="js/universal/jquery.js"></script>
+
+<!-- style switcher -->
+<script src="js/style-switcher/jquery-1.js"></script>
+<script src="js/style-switcher/styleselector.js"></script>
+
+<!-- animations -->
+<script src="js/animations/js/animations.min.js" type="text/javascript"></script>
+<script src="js/animations/js/smoothscroll.js" type="text/javascript"></script>
+
+<!-- slide panel -->
+<script type="text/javascript" src="js/slidepanel/slidepanel.js"></script>
+
+<!-- mega menu -->
+<script src="js/mainmenu/bootstrap.min.js"></script> 
+<script src="js/mainmenu/customeUI.js"></script> 
+
+<!-- jquery jcarousel -->
+<script type="text/javascript" src="js/carousel/jquery.jcarousel.min.js"></script>
+
+<!-- scroll up -->
+<script src="js/scrolltotop/totop.js" type="text/javascript"></script>
+
+<!-- tabs -->
+<script src="js/tabs/assets/js/responsive-tabs.min.js" type="text/javascript"></script>
+
+<!-- jquery jcarousel -->
+<script type="text/javascript">
+(function($) {
+ "use strict";
+
+	jQuery(document).ready(function() {
+			jQuery('#mycarouselthree').jcarousel();
+	});
+	
+})(jQuery);
+</script>
+
+<!-- accordion -->
+<script type="text/javascript" src="js/accordion/custom.js"></script>
+
+<!-- sticky menu -->
+<script type="text/javascript" src="js/mainmenu/sticky.js"></script>
+<script type="text/javascript" src="js/mainmenu/modernizr.custom.75180.js"></script>
+
+<script src="js/form/jquery.form.min.js"></script>
+<script src="js/form/jquery.validate.min.js"></script>
+<script src="js/form/jquery.modal.js"></script>
+
+
+<!-- PHP Message -->
+<?php 
+$message=$_GET['message'];
+if($message!="")echo "<script>alert('$message');</script>";  
+?>
+<script src="https://checkout.stripe.com/checkout.js"></script>
+<script>
+var token='<? echo "$token"; ?>';
+var status='<? echo "$obj->status"; ?>';
+var failure_message='<? echo "$obj->failure_message"; ?>';
+var invoice='<? echo "$obj->invoice"; ?>';
+if(token!='')
+{
+	var message='';
+	if(status=="succeeded")message='The payment has been processed succesfully. Receipt sent to your email';
+	else message='There was an error with your card payment:'+failure_message;
+	alert(message);		
+	window.location.href = "payment2.htm"; 
+}
+
+
+var handler = StripeCheckout.configure({
+  key: 'pk_live_DpXx9nxMPtqXpE4HN3xXmpwz',
+  image: 'images/logo.jpeg',
+  locale: 'auto',
+  email: '<?echo $EMAIL;?>',
+  name: 'xtutor.online',
+  currency: 'USD',
+  token: function(token) {
+    // You can access the token ID with `token.id`.
+    // Get the token ID to your server-side code for use.
+  }
+});
+function openpayment()
+{
+  var min=document.getElementById("minutes").value;
+  //alert(min);
+  if(min==30)
+  	handler.open({description: 'Add 30 minutes of online tutoring',amount: 900});
+  else
+	handler.open({description: 'Add 60 minutes of online tutoring',amount: 1800});
+  
+  //e.preventDefault();
+}
+
+// Close Checkout on page navigation:
+window.addEventListener('popstate', function() {
+  handler.close();
+});
+</script>
+<!-- cubeportfolio -->
+<script type="text/javascript" src="js/cubeportfolio/jquery.cubeportfolio.min.js"></script>
+<script type="text/javascript" src="js/cubeportfolio/main.js"></script>
+<script type="text/javascript" src="js/cubeportfolio/main5.js"></script>
+<script type="text/javascript" src="js/cubeportfolio/main6.js"></script>
+
+<!-- carousel -->
+<script defer src="js/carousel/jquery.flexslider.js"></script>
+<script defer src="js/carousel/custom.js"></script>
+
+<!-- lightbox -->
+<script type="text/javascript" src="js/lightbox/jquery.fancybox.js"></script>
+<script type="text/javascript" src="js/lightbox/custom.js"></script>
+
+
+
+</body>
+</html>

@@ -1,0 +1,134 @@
+<?php
+    include("security/constants.php");  //no header because when sessions is outdated it shows login window
+	include("conexion/conexion.php");  
+	$WHITEBOARD="TWIDDLA";  //$WHITEBOARD="LIVEBOARD";
+	session_start();
+	//THIS REPLACES HEADER
+	$con=openDB();
+	$USER_CODE=$_SESSION['COD_USUARIO'];	            //usar esto si register_globals=off
+	$query="SELECT NAME,USERTYPE FROM USERS WHERE USERCODE='$USER_CODE'";
+	$resultado=genesis_exec($con,$query);
+    $USER_NAME=genesis_result($resultado,1);
+	$USER_TYPE=genesis_result($resultado,2);
+	//END HEADER
+	
+$lesson=$_GET['lesson'];  //lesson already exists 
+
+if($USER_TYPE=="STUDENT")
+	$query="SELECT LESSONCODEVAR,LESSONSUBJECT,LESSONTYPE,MINUTES,NAME FROM LESSONS JOIN USERS ON LESSONS.TUTOR=USERS.USERCODE WHERE LESSONCODE=$lesson";
+else
+	$query="SELECT LESSONCODEVAR,LESSONSUBJECT,LESSONTYPE,MINUTES,NAME FROM LESSONS JOIN USERS ON LESSONS.USERCODE=USERS.USERCODE WHERE LESSONCODE=$lesson";
+$result=genesis_exec($con,$query);
+$LESSON_CODEVAR=genesis_result($result,1);
+$LESSON_SUBJECT=genesis_result($result,2);
+$LESSON_TYPE=genesis_result($result,3);
+$MINUTES_SINCEBEGIN=genesis_result($result,4);
+$STUDENTNAME=genesis_result($result,5);  //TUTOR NAME IF USERTYPE=STUDENT
+$USER_BALANCE=0;
+$ACTIVE_LESSONSTATUS=0;
+genesis_commit($con);
+closeDB($con);
+?>
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="xtutor.css">
+<title>xtutor</title>
+<script>
+</script>
+</head>
+<body>
+<div >
+<form id="form1">
+<input type=hidden name='form_action' id='form_action'></input>
+</form>
+<!--be carefull, any button inside a form will submit the form-->
+<table id="table1" class="header" ><tr><td><img src="images/logo.jpg" class="logo2"></td><td>Welcome <output id="username"></output>!</td><td>Available minutes= <output id="available">00</output> </td><td>Lesson time= <output id="timer">00</output>:<output id="timer2">00</output></td><td>Lesson code= <input name='form_lessoncodevar' id='form_lessoncodevar' size=7 ></input></td><?php if($_SESSION['TIPO_USUARIO']=='TUTOR' && $WHITEBOARD=='LIVEBOARD')echo "<td><button id='send' onclick='sendcode()'>Send code</button></td>";?> <?php if($_SESSION['TIPO_USUARIO']=='STUDENT' && $SHOWSTARTBUTTON)echo"<td><button id='start' onclick='startfunction()'>Start lesson</button></td>";?><td><button id="stop" onclick="stopfunction()">Close lesson</button></td></tr></table>
+<table id="table2" class="header"  style="font-size:16px" ><tr><?php if($_SESSION['TIPO_USUARIO']=='STUDENT' )echo"<td>Tutor: <output id='form_tutorname'></output></td>"; else echo"<td>Student: <output id='form_studentname'></output></td>";?><td>Lesson subject: <output id="lessontopic"></output></td><td>Lesson type: <output id="lessontype"></output></td><td>Status: <output id="lessonstatus"></output></td></tr></table>
+</div>
+
+<script>
+
+//var originalAvailable='<?php echo "$USER_BALANCE"; ?>';  //Deprecated:this helps if we want to count time locally
+var newAvailable=<?php echo "$USER_BALANCE"; ?>;
+var elapsedTime='<?php echo "$MINUTES_SINCEBEGIN"; ?>';
+var username='<?php echo "$USER_NAME"; ?>';
+var usertype='<?php echo "$USER_TYPE" ?>';
+var code='<?php echo "$LESSON_CODEVAR" ?>';
+var studentname='<?php echo "$STUDENTNAME"; ?>';  //THIS IS TUTOR NAME IN CASE CURRECT USER IS STUDENT
+var activelessonstatus=<?php echo "$ACTIVE_LESSONSTATUS"; ?>;
+var lessontopic='<?echo "$LESSONSUBJECTS_LIST[$LESSON_SUBJECT]";?>';
+var lessontype='<?echo "$LESSONTYPES_LIST[$LESSON_TYPE]";?>';
+var lessonstatus='<?echo "$LESSONSTATUS_LIST[$ACTIVE_LESSONSTATUS]";?>';
+
+loadpage();  //every time this page is loaded 
+function loadpage()
+{
+	document.getElementById("timer").innerHTML = elapsedTime;
+	//document.getElementById("available").innerHTML = newAvailable;
+	document.getElementById("username").innerHTML =username;
+	document.getElementById("form_lessoncodevar").value = code;
+	document.getElementById("stop").disabled = false;
+	document.getElementById("lessontopic").value = lessontopic;
+	document.getElementById("lessontype").value = lessontype;
+	document.getElementById("lessonstatus").value = lessonstatus;
+	document.getElementById("table1").style.backgroundColor="#222255";
+	document.getElementById("table2").style.backgroundColor="#222255";
+	
+	if(usertype=='STUDENT')
+	{
+		document.getElementById("form_lessoncodevar").disabled = true;
+		document.getElementById("form_tutorname").value =studentname; //studentname has the name of the tutor in case current user is student
+		
+	}		
+	else //tutor
+	{	
+		document.getElementById("form_studentname").value =studentname;		
+		
+	}
+	
+}
+
+
+function convertMillisecondsToTime(difference_ms)
+{
+
+  //take out milliseconds
+  difference_ms = difference_ms/1000;
+  var seconds = Math.floor(difference_ms % 60).toString();
+  difference_ms = difference_ms/60; 
+  var minutes = Math.floor(difference_ms % 60).toString();
+  difference_ms = difference_ms/60; 
+  var hours = Math.floor(difference_ms % 24).toString();  
+  var days = Math.floor(difference_ms/24).toString();
+  if (seconds.length==1)seconds='0'+seconds;
+  if (minutes.length==1)minutes='0'+minutes;
+  if (hours.length==1)hours='0'+hours;
+  return hours + ':' + minutes;
+  
+}  
+
+function stopfunction()
+{
+	//be carefull, any button inside a form will submit the form
+	var resp=confirm('Are you sure to close this window ?')
+	if(resp)
+	{	
+		//clearInterval(timer);
+		document.getElementById("form1").method="post";
+		document.getElementById("form1").action="lessonwindowheader.htm";
+		document.getElementById("form_action").value="stop";
+		document.getElementById("form1").submit();
+	}
+	
+}
+
+
+</script>
+<script>
+if ( window.history.replaceState ) {
+  //window.history.replaceState( null, null, window.location.href );
+  window.history.replaceState( null, null, "pastlessonwindowheader.htm" );
+}
+</script>
+</body>
+</html>

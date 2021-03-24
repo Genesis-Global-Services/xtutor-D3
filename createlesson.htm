@@ -1,0 +1,84 @@
+<?php
+
+include("security/header.php");
+
+//TWIDDLA
+?>
+<!--  this rerturns a simple text in the window (so we n eed to writre down the code) -->
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="xtutor.css">
+<title>xtutor</title>
+</head>
+<body>
+
+<form id="form1" action="https://www.twiddla.com/API/CreateMeeting.aspx" method="post">
+					<table>
+						<tr>
+							<td align="right">
+								username
+							</td>
+							<td>
+								<input type="text" id="username" name="username" />
+							</td>
+						</tr>
+						<tr>
+							<td align="right">
+								password
+							</td>
+							<td>
+								<input type="password" id="password" name="password" />
+							</td>
+						</tr>
+						<tr>
+							<td align="right">
+								meetingtitle
+							</td>
+							<td>
+								<input type="text" id="meetingtitle" name="meetingtitle" />
+							</td>
+						</tr>
+						<tr>
+							<td align="right">
+								meetingpassword
+							</td>
+							<td>
+								<input type="text" id="meetingpassword" name="meetingpassword" />
+							</td>
+						</tr>
+						<tr>
+							<td align="right">
+								url
+							</td>
+							<td>
+								<input type="text" id="url" name="url" />
+							</td>
+						</tr>
+						<tr>
+							<td align="right">
+								presenterusername
+							</td>
+							<td>
+								<input type="text" id="presenterusername" name="presenterusername" />
+							</td>
+						</tr>
+						<tr>
+							<td></td>
+							<td>
+								<input type="submit" value="Create Meeting" />
+							</td>
+						</tr>
+					</table>
+				</form>
+
+
+<script >
+document.getElementById("username").value="xtutor-info";
+document.getElementById("password").value="babel123";
+document.getElementById("meetingtitle").value="xtutor.info online lesson";
+document.getElementById("presenterusername").value="xtutor.info";
+document.getElementById("form1").submit();
+ </script>
+</body>
+</html>
+

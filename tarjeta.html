@@ -1,0 +1,70 @@
+<div class="col-md-3 mb-3" >
+<div class="card rounded-0 " 
+    style="min-height: 500px; max-height: 500px; margin-bottom: 10px;
+            min-width: 20em; max-width: 20em;
+            " >
+    <div class="card-header" style="max-height: 50px;">
+        <h4 class="mb-0">{{TUTOR NAME}}</h4 >
+    </div>
+    <div class="card-body">
+        <table style="padding: 3px;" width="100%" border="1" style="border: 1px solid black;">
+            <tr>
+            <td style="text-align: center;" valign="top"><img class="idpic" src="{{pictureSource}}"  height="195"/></td>
+            <td valign="top" style="padding: 5px; vertical-align: top;">
+                <img class="sticon" src="https://www.xtutor.online/images/online.png" width="20" height="20" style="display: {{online}};" />
+                <img class="sticon" src="https://www.xtutor.online/images/offline.png" width="20" height="20" style="display:{{offline}};" /> 
+                <table border="1">
+                    <tr><td>&nbsp;</td></tr>
+                    <tr>
+                        <td style="padding: 0;">                                                           
+                           
+                            <canvas id="{{canvasid}}" width="25" height="25" style="border:0px solid#c3c3c3; margin: 0; z-index: 1;">
+                            </canvas>    
+                            
+                        </td>
+                    </tr>
+                    <tr><td> <p style="font-size: smaller; margin-top: 0px;" align="center">{{calificacion}}</p></td></tr>
+                </table>
+               
+                
+            </td>
+        </tr>
+        <tr > 
+            <td colspan="2"><p style="
+
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-height: 7rem;" >
+                {{summary}}
+                </p>
+        
+
+            </td>
+            </tr>
+        <tr ><td colspan="2">
+            <p><strong>Rate:</strong> {{rate}}$/h</p>
+        </td></tr>
+        
+        </table>
+       
+        
+      
+            
+            
+        </form>
+    </div>
+    <div class="card-footer">
+        <form  class="form">
+            <table>
+                <tr>
+                    <td><button onClick="redirigir({{tutor}},{{field}},{{subject}}, 0)" type="button" class="btn btn-secondary float-left" {{isDisabled}}>Instant Lesson</button></td>
+                    <td><button onClick="redirigir({{tutor}},{{field}},{{subject}}, 1)" type="button" class="btn btn-primary float-left">Sched. Lesson&nbsp;</button>
+                 <script>
+                     drawBox('{{canvasid}}', {{indice}});
+                 </script>
+                 </td>
+                </tr>
+            </table>
+  </div>
+</div>
+</div>

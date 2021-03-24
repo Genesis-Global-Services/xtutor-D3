@@ -1,0 +1,88 @@
+<!-- <meta http-equiv="refresh" content="0; url=http://xtutor.wiziqxt.com/" /> use this to forward -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="description" content="Online tutor">
+<meta name="keywords" content="Online,Tutor,Tutoring,Math,Mathematics,Statistics,Physics,Computer Science">
+
+<link rel="stylesheet" type="text/css" href="xtutor.css">
+<title>Online tutor</title>
+</head>
+<body>
+<!-- Load Facebook SDK for JavaScript -->
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = 'https://connect.facebook.net/en_US/sdk/xfbml.customerchat.js#xfbml=1&version=v2.12&autoLogAppEvents=1';
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+<!-- Your customer chat code -->
+<div class="fb-customerchat"
+  attribution=setup_tool
+  page_id="1950022598643103">
+</div>
+
+<div >
+<table class="header"><tr><td><img src="images/logo.jpg" class="logo"></td><td>xtutor.online</td><td> Online tutoring platform</td><td><a href="register.htm">Sign up</a></td></tr></table>
+</div>
+
+<div class="form1">
+<h1>Log in (returning users)</h1>
+<table align=center>
+
+<form id="form1" method="post">
+<tr>
+<td>
+<b>Email:</b></td><td><input type=text size=20 name="form_email">
+</td>
+</tr>
+<tr>
+<td>
+<b>Password:</b></td><td><input type=password size=20 name="form_password">  
+</td>
+</tr>
+<tr>
+<td colspan=2>
+<button class="formbutton" onclick=validate() >Log in</button>
+</td>
+</tr>
+<tr>
+<td colspan=2>
+<br><a href="register.htm">Sign up here (new users)</a>
+</td>
+</tr>
+</table>
+</form>
+</div>  <!--class login-->
+<?php 
+$message=$_GET['message'];
+if($message!="")echo "<script>alert('$message');</script>";  
+?>
+</body>
+
+<script>
+function validate()
+{
+   var result=true;
+   f=document.getElementById("form1");
+   if(f.form_password.value=="" || f.form_email.value=="")
+   {
+	  alert("Please, complete all fields");
+		  result=false;
+   }
+   if(result)  
+	{  
+	  f.method="post";
+	  f.action="login.php";
+	  f.submit();
+	  
+	}
+	return true;
+}
+
+</script>
+</html>
+
+

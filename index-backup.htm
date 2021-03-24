@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="description" content="Online tutor">
+<meta name="keywords" content="Online,Tutor,Tutoring,Math,Mathematics,Statistics,Physics,Computer Science">
+<link rel="stylesheet" type="text/css" href="xtutor.css">
+<title>Online tutor</title>
+</head>
+<body style="background-color:black;>
+<!-- Load Facebook SDK for JavaScript -->
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = 'https://connect.facebook.net/en_US/sdk/xfbml.customerchat.js#xfbml=1&version=v2.12&autoLogAppEvents=1';
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<!-- Your customer chat code -->
+<div class="fb-customerchat"
+  attribution=setup_tool
+  page_id="1950022598643103">
+</div>
+<div >
+<table class="header"><tr><td><img src="images/logo.jpg" class="logo"></td><td>xtutor.online</td><td> Online tutoring platform</td><td><a href="login.htm">Log in</a></td><td><a href="register.htm">Sign up</a></td></tr></table>
+<table style="width:100%;background-color:black;color:white; padding: 0px;margin: 0px;font-family:Tahoma;text-align: center;" border=0>
+<tr><td>Facebook: xtutor</td><td>Twitter: @XtutorO</td><td>Instagram: xtutor.online</td><td>Email: xtutor.info@gmail.com</td></tr>
+</table>
+
+</div>
+<!--<iframe src="https://www.facebook.com/plugins/post.php?href=https%3A%2F%2Fwww.facebook.com%2Fxtutor%2Fposts%2F2025777104400985&width=500" width="24%" height="441" style="border:none;overflow:hidden" scrolling="no" frameborder="0" allowTransparency="true" allow="encrypted-media"></iframe>-->
+<iframe src="https://www.facebook.com/plugins/post.php?href=https%3A%2F%2Fwww.facebook.com%2Fxtutor%2Fposts%2F2025832891062073&width=500" width="24%" height="441" style="border:none;overflow:hidden" scrolling="yes" frameborder="0" allowTransparency="true" allow="encrypted-media"></iframe>
+<!--<div class="header">-->
+<?
+if($_GET['site']=="schools") echo "<img src=images/school.jpg>";
+elseif($_GET['site']=="english") echo "<img src=images/english.jpg>";
+else echo "<img src=images/main.jpg width='74%' height='441'>";
+?>
+<!--</div>-->
+
+<?php 
+$message=$_GET['message'];
+if($message!="")echo "<script>alert('$message');</script>";  
+?>
+<table style="width:100%;background-color:black;color:white">
+<tr><td colspan=4>&copy; 2018 Genesis Global Services LLC - All Rights reserved</td></tr>
+</table>
+</body>
+</html>
+<body b>
+
+

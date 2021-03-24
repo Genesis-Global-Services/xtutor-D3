@@ -1,0 +1,138 @@
+<!-- <meta http-equiv="refresh" content="0; url=http://xtutor.wiziqxt.com/" /> use this to forward -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="description" content="Online tutor">
+<meta name="keywords" content="Online,Tutor,Tutoring,Math,Mathematics,Statistics,Physics,Computer Science">
+
+<link rel="stylesheet" type="text/css" href="xtutor.css">
+<title>Online tutor</title>
+</head>
+<body>
+<!-- Load Facebook SDK for JavaScript -->
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = 'https://connect.facebook.net/en_US/sdk/xfbml.customerchat.js#xfbml=1&version=v2.12&autoLogAppEvents=1';
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+<!-- Your customer chat code -->
+<div class="fb-customerchat"
+  attribution=setup_tool
+  page_id="1950022598643103">
+</div>
+<div >
+<table class="header"><tr><td><img src="images/logo.jpg" class="logo"></td><td>xtutor.online </td><td>Online tutoring platform</td><td><a href="login.htm">Log in</a></td></tr></table>
+</div>
+
+<h1>Sign up (new users)</h1>
+<div class="form1" style="width:800px">
+<table align=center style="width:600px">
+<form id="form1" method="post" >
+<tr>
+<td align=right>
+<b>Email:</b></td><td><input type=text size=20 name="form_email">
+</td>
+</tr>
+<tr>
+<td align=right>
+<b>Password:</b></td><td><input type=password size=20 name="form_password">  
+</td>
+</tr>
+<tr>
+<td align=right>
+<b>Confirm password:</b></td><td><input type=password size=20 name="form_password2">  
+</td>
+</tr>
+<tr>
+<td align=right>
+<b>Given name:</b></td><td><input type=text size=20 name="form_name">  
+</td>
+</tr>
+<tr>
+<td colspan=2>
+<p align=center><b>Terms of service:</b></p>
+<p>(1) xtutor.online is not responsible for academic honesty of student which is the sole responsible for it. xtutor.online accepts all help requests under this understanding. 
+<p>(2) Students are welcome to provide their feedback and reviews in our facebook page and also tutors have the rigth to reply to those comments in the same post.
+<p>(3) Students and tutors must be respectful all the time. xtutor.online may block tutors and students that do not follow this policy.
+<p>(4) xtutor.online does not keep record of your credit card information. 
+<p>(5) xtutor.online only keeps your email address for internal communications and does not share this information with tutors or any other website or company.
+<p>(6) Students can ask for a refund anytime (without the need to provide a reason) which will be processed (without questioning) in about 5 days. Students that request refunds more than once may be blocked to use the service again.
+<p>(7) Students and tutors can not exchange personal or contact information.
+<p>(8) Students must be 14 years old or older to use xtutor.online
+</td>
+</tr>
+<tr>
+<td colspan=2>
+<input type=checkbox  name="form_check"><b> I have read and I accept all terms of service above.</b>
+</td>
+</tr>
+<tr>
+<td colspan=2>
+<button class="formbutton" onclick=validate() >Sign up</button>
+</td>
+</tr>
+<tr>
+<td colspan=2>
+<br><a href="login.htm">Log in here (returning users)</a>
+</td>
+</tr>
+</table>
+</form>
+</div>  <!--class login-->
+</body>
+
+<?php 
+$message=$_GET['message'];
+if($message!="")echo "<script>alert('$message');</script>";  
+?>
+<script>
+function validate()
+{
+   var result=true;
+   f=document.getElementById("form1");
+   if(f.form_name.value=="" || f.form_password.value=="" || f.form_password2.value=="" || f.form_email.value=="")
+   {
+	  alert("Please, complete all fields");
+		  result=false;
+   }
+   if(result && f.form_password.value!=f.form_password2.value)
+	{
+		alert("Passwords don´t match");
+		result=false;
+	}
+	if(result && (f.form_password.value.length<6 || f.form_password.value.length >10))
+	{
+		alert("Password length must be between 6 and 10 characters");
+		result=false;
+	}
+	if(result && f.form_name.value.length<3)
+	{
+		alert("Given name must be at least 3 characters long");
+		result=false;
+	}
+	if (result && !(/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(f.form_email.value)))
+    {
+		alert("The email address is not valid");
+		result=false;
+    }
+	//alert(f.form_check.checked);
+	if(result && !f.form_check.checked)  
+	{
+		alert("Please read and accept the terms of service");
+		result=false;
+	}
+	if(result)  
+	{  
+	  f.method="post";
+	  f.action="register.php";
+	  f.submit();
+	  
+	}
+	return true;
+}
+
+</script>
+</html>

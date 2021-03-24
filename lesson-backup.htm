@@ -1,0 +1,363 @@
+<?php
+include("security/header.php");
+$login=$_GET['login'];
+if($login=="")$login=0;
+$con=openDB();
+
+
+    //IF THIS IS STUDENT WE CHECK PAST LESSONS THAT MAY REMAIN ACTIVE 
+	//  CASE 1:  THERE ARE ACTIVE LESSONS OLDER THAN $MAXINACTIVETIME SEC (BECAUSE BOTH PARTIES LEFT)THEN WE STOP THOSE LESSONS, WE WILL START A NEW LESSON
+	//  CASE 2:  THERE IS AN ACTIVE LESSON NOT OLDER THAN $MAXINACTIVETIME SEC AND OTHER PART LEFT THEN WE PAUSE THE LESSON
+	//  CASE 3:  THERE IS AN ACTIVE LESSON NOT OLDER THAN $MAXINACTIVETIME SEC AND BALANCE<1 THEN WE PAUSE THE LESSON
+	if($USER_TYPE=='STUDENT')   
+	{
+		//WITH THIS IT SHOULD BE MAXIMUM ONE LESSON WITH STOPPED=0 
+		$query="SELECT LESSONCODE FROM LESSONS WHERE USERCODE='$USER_CODE' AND STOPPED=0 AND TIME_TO_SEC(TIMEDIFF(NOW(),LESSONEND))>$MAXINACTIVETIME"; 
+		$resultado=genesis_exec($con,$query);
+		while(genesis_fetch_row($resultado)) 
+		{ 	
+			$L=genesis_result($resultado,1);
+			$query="UPDATE LESSONS SET STOPPED=1 WHERE LESSONCODE=$L"; 
+			echo "query=$query";
+			$resultado=genesis_exec($con,$query);
+			if($LESSON_NUMBER==$L)  //if current lesson is outdated then we void the lesson (table user is read in header)
+			{	
+				$query="UPDATE USERS SET ACTIVELESSONSTATUS=0,ACTIVELESSONCODEVAR='',ACTIVELESSONNUMBER=0 WHERE ACTIVELESSONNUMBER=$L"; //BOTH
+				//THIS FORCES TO START A NEW LESSON
+				$resultado=genesis_exec($con,$query);
+				$ACTIVE_LESSONSTATUS=0;
+				$LESSON_NUMBER=0;
+				$LESSON_CODEVAR='';
+				$_SESSION['ACTIVE_LESSONSTATUS']=$ACTIVE_LESSONSTATUS;
+				$_SESSION['LESSON_CODEVAR']=$LESSON_CODEVAR;
+				$_SESSION['LESSON_NUMBER']=$LESSON_NUMBER;
+				
+			}	
+		}
+		
+		//Another correction: if there is an active lesson in table users (read in header) but no active lesson in table lesson then we erase lesson in table users
+		//Caution:  if status==4 then stopped=1 (this case is possible)
+		if($LESSON_NUMBER!=0 && $ACTIVE_LESSONSTATUS==3)  //if current lesson is outdated then we void the lesson (table user is read in header)
+		{
+			$query="SELECT LESSONCODE FROM LESSONS WHERE USERCODE='$USER_CODE' AND STOPPED=0 AND LESSONCODE=$LESSON_NUMBER"; 
+			$resultado=genesis_exec($con,$query);
+			if(!genesis_fetch_row($resultado))   //if we dont find that lesson opened in table lessons then we erase the lesson from table users 
+			{ 	
+				$query="UPDATE USERS SET ACTIVELESSONSTATUS=0,ACTIVELESSONCODEVAR='',ACTIVELESSONNUMBER=0 WHERE ACTIVELESSONNUMBER=$LESSON_NUMBER"; //BOTH
+				//THIS FORCES TO START A NEW LESSON
+				$resultado=genesis_exec($con,$query);
+				$ACTIVE_LESSONSTATUS=0;
+				$LESSON_NUMBER=0;
+				$LESSON_CODEVAR='';
+				$_SESSION['ACTIVE_LESSONSTATUS']=$ACTIVE_LESSONSTATUS;
+				$_SESSION['LESSON_CODEVAR']=$LESSON_CODEVAR;
+				$_SESSION['LESSON_NUMBER']=$LESSON_NUMBER;
+			}			
+		}
+	}
+
+
+
+
+//STUDENTS HAVE A FORM AND SUBMIT THE FORM AND RELOAD THE PAGE
+//TUTORS DON'T HAVE THE FORM BUT OPEN LESSONS DIRECTLY
+
+
+//if the form is submitted (this page is reloaded)
+$form_lessoncode=$_POST['form_lessoncode'];  //first time this will be empty
+$form_lessontype=$_POST['form_lessontype'];  //first time this will be empty
+$form_lessonsubject=$_POST['form_lessonsubject'];  //first time this will be empty
+if($form_lessontype=='')$form_lessontype=0;
+if($form_lessonsubject=='')$form_lessonsubject=0;
+
+if($LESSON_CODEVAR!='')  //first time this variable is in header and comes from table USERS
+	$LESSONFOUND=1;
+else
+	$LESSONFOUND=0;	
+
+if($form_lessoncode!='') //second time (page reloaded with form data, it looks for another code
+{
+    $LESSONFOUND=0;
+	
+	$query="SELECT USERCODE FROM USERS WHERE USERTYPE='TUTOR' AND ACTIVELESSONSTATUS<>0 AND ACTIVELESSONCODEVAR='$form_lessoncode'";
+	$resultado=genesis_exec($con,$query);
+	if(genesis_fetch_row($resultado))
+    { 	
+		$LESSONFOUND=1;        
+	}	
+	
+}
+		//if the lesson already exists (lesson window opened) then we only enable the open button it it was closed
+		$query="SELECT TIME_TO_SEC(TIMEDIFF(NOW(),LASTUPDATE))  FROM USERS WHERE USERCODE='$USER_CODE'";
+		$resultado=genesis_exec($con,$query);
+		$MYLESSONWINDOWCLOSED=1; //IF THE RESULT IS NULL (NEW USER) THEN CLOSED=1
+		if(genesis_fetch_row($resultado)) 
+        { 	
+			$DIFF=genesis_result($resultado,1);
+			//echo "DIFF=$DIFF";
+			if($DIFF>$RELOAD/1000)
+			{
+				$MYLESSONWINDOWCLOSED=1;				
+			}
+			else
+				$MYLESSONWINDOWCLOSED=0;			
+		}
+genesis_commit($con);
+closeDB($con);		
+?>
+<!-- <meta http-equiv="refresh" content="0; url=http://xtutor.wiziqxt.com/" /> use this to forward -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="description" content="Online tutor">
+<meta name="keywords" content="Online,Tutor,Tutoring,Math,Mathematics,Statistics,Physics,Computer Science">
+
+<link rel="stylesheet" type="text/css" href="xtutor.css">
+<title>Online tutor</title>
+</head>
+<body>
+<!-- Load Facebook SDK for JavaScript -->
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = 'https://connect.facebook.net/en_US/sdk/xfbml.customerchat.js#xfbml=1&version=v2.12&autoLogAppEvents=1';
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+<!-- Your customer chat code -->
+<div class="fb-customerchat"
+  attribution=setup_tool
+  page_id="1950022598643103">
+</div>
+<div >
+<table class="header"><tr><td><img src="images/logo.jpg" class="logo"></td><td>Welcome <output id="username"></output>! </td><td> Available minutes = <output id='available'></output> </td><td><a href="logout.php">Logout</a></td></tr></table>
+</div>
+<table style="width:100%" border=0>
+<tr>
+<td style="vertical-align:top;" style="width:20%" >
+<div class="menu">
+  <br><a href="payment.htm">Add minutes</a>
+  <br><a class="current" id="lessonlink">Enter lesson</a>
+  <br><a href="past.htm">Past lessons</a>
+  <br><a href="account.htm">Modify account</a>  
+</div>
+</td>
+<td valign="top" style="width:80%">
+<div class="content">
+<h1 id="title">Enter lesson</h1>
+<br><br><br><br><br>
+<h2 id="lesson" style="margin:auto;text-align: center;"></h2>
+<br>
+<form id='form1' method='post' action='lesson.htm' onsubmit="return validateForm()">
+<table cellpadding='10'>
+<tr><td class="centraltext">Enter lesson code:</td><td><input type=text size=7 name='form_lessoncode' id='form_lessoncode'></input></td>
+<?php
+if($USER_TYPE=='STUDENT' && $LESSON_CODEVAR=='')
+{
+	echo "<td class='centraltext'>Lesson type:</td>";
+	echo "<td><select name='form_lessontype' id='form_lessontype'>";
+	$length=sizeof($LESSONTYPES_LIST);
+	echo"<option value='0'>$LESSONTYPES_LIST[0]</option>";
+	for($i=1;$i<$length;$i++)echo"<option value='$i'>$LESSONTYPES_LIST[$i]</option>";
+	echo "</select></td>";
+	echo "<td class='centraltext'>Lesson subject:</td>";
+	echo "<td><select name='form_lessonsubject' id='form_lessonsubject'>";
+	$length=sizeof($LESSONSUBJECTS_LIST);
+	echo"<option value='0'>$LESSONSUBJECTS_LIST[0]</option>";
+	for($i=1;$i<$length;$i++)echo"<option value='$i'>$LESSONSUBJECTS_LIST[$i]</option>";
+	echo "</select></td>";
+}
+?>
+
+<td colspan=2 align=center><input type='submit' id='openbutton' value='Open lesson' ></input></td>
+
+</form>
+
+<?php
+if($USER_TYPE!='STUDENT' && $LESSON_CODEVAR=='')echo "<td><button onclick='createlesson()'>Create new lesson</button> </td>";
+?>
+</tr>
+</table>
+<p id="message"></p>
+</div>
+</td>
+<td style="width:20%">  <!--  images section --->
+<table>
+<tr><td><img id="pic1" src="images/picture6.jpg" width='200px' height='120px'></td></tr>
+<tr><td><img id="pic2" src="images/picture2.jpg" width='200px' height='120px'></td></tr>
+<tr><td><img id="pic3" src="images/picture8.jpg" width='200px' height='120px'></td></tr>
+<tr><td><img id="pic4" src="images/picture4.jpg" width='200px' height='120px'></td></tr>
+</table>
+<script>
+setInterval(pictures,5000);
+var  number;
+var  source;
+var picture;
+function pictures()
+{
+  for(i=1;i<=4;i++)
+  {
+    number=Math.floor(Math.random() * 8)+1;
+    source="images/picture"+number+".jpg";
+    picture="pic"+i;	
+    document.getElementById(picture).src =source;
+  }
+}
+</script>
+
+</td> <!--  end images section --->
+</tr>
+</table>
+
+
+
+<script>
+setTimeout(reload,<?echo "$RELOAD";?>);
+function reload()
+{
+	location.reload(); 
+}
+function sleep(milliseconds) {
+  var start = new Date().getTime();
+  for (var i = 0; i < 1e7; i++) {
+    if ((new Date().getTime() - start) > milliseconds){
+      break;
+    }
+  }
+}
+var mylessonwindowclosed=<?echo "$MYLESSONWINDOWCLOSED";?>;
+var available='<?php echo "$USER_BALANCE"; ?>';
+var username='<?php echo "$USER_NAME"; ?>';
+var usertype='<?php echo "$USER_TYPE"; ?>';
+document.getElementById("available").innerHTML =available;
+document.getElementById("username").innerHTML =username;
+
+var activelessonstatus=<?php echo "$ACTIVE_LESSONSTATUS"; ?>;   //1st time, user has a lesson currently active, this comes from header, must be at least 0
+var activelessoncode='<?php echo "$LESSON_CODEVAR"; ?>';        //1st time, user has a current active lesson, it can not go to another one
+var lessonfound=<?php echo "$LESSONFOUND"; ?>;                 //1st time is 0, second time is when this page is reloaded
+
+//STUDENTS HAVE A FORM AND SUBMIT THE FORM AND RELOAD THE PAGE
+//TUTORS DON'T HAVE THE FORM BUT OPEN LESSONS DIRECTLY
+//if the first time there is an active lesson it can not search or go to another lesson
+
+
+var form_lessoncode='<?php echo "$form_lessoncode" ?>'; //2nd time this variable is not empty and it tryes to go to lesson
+var form_lessontype=<?php echo "$form_lessontype" ?>; //2nd time this variable is not empty and it tryes to go to lesson
+var form_lessonsubject=<?php echo "$form_lessonsubject" ?>; //2nd time this variable is not empty and it tryes to go to lesson
+
+if(form_lessoncode=='')  //first time
+{
+	if(activelessonstatus)document.getElementById("form_lessoncode").value=activelessoncode; //first time the form exist only for the student
+}
+else  //second time we receive the values of the form
+{
+	document.getElementById("form_lessoncode").value=form_lessoncode; 
+	var t=document.getElementById("form_lessontype");
+	if(t!=null)t.value=form_lessontype; 
+	var s=document.getElementById("form_lessonsubject"); 
+	if(s!=null)s.value=form_lessonsubject;
+	gotolesson();  //2nd time
+}
+if(usertype=='STUDENT')  //students can not change 
+{
+	if(lessonfound || activelessonstatus) 
+	{
+		//document.getElementById("form_lessoncode").readOnly=true;	 //do not use disabled, it does not send the form
+	}
+	else
+	{
+		document.getElementById("form_lessoncode").readOnly=false;
+	}
+}
+if(lessonfound || activelessonstatus)
+{
+	document.getElementById("lesson").innerHTML ="Active lesson: "+activelessoncode;	
+	//document.getElementById("openbutton").disabled=!mylessonwindowclosed; //if there is an active lesson it depends if the window is closed or not	
+}
+else
+{
+	document.getElementById("lesson").innerHTML ="No active lesson";
+    //document.getElementById("openbutton").disabled=false; 	
+}
+
+
+
+
+//the form calls the same page to search the lesson
+function validateForm()
+{
+  
+  if(document.getElementById("form_lessoncode").value=='')
+  {
+	alert('Enter the lesson code');
+	return false;
+  }  
+  if(parseInt(available)<2 && usertype=='STUDENT')
+  {
+		alert('You have too few available minutes. Please add minutes');
+		return false;
+   }
+   
+   if(!lessonfound && usertype!='STUDENT' )  //tutors and admins go directly to lessonwindow
+   {
+		gotolesson();
+		return false;
+   }
+   return true;
+}
+
+ 
+
+function gotolesson()  //this is called by students on the second time and by tutors directly
+{
+if(lessonfound || usertype!='STUDENT' )  //tutors and admins can always create lessons
+{
+	if(confirm('Do you want to open a new window/tab and go to the lesson ?'))
+	{	
+		document.getElementById("message").innerHTML ="Opening new window or tab ... Check pop up windows";
+	    //tutors can go directly to lesson without searching a lesson (so lessonfound=false and then we use the code in the form directly)
+		activelessoncode=document.getElementById("form_lessoncode").value;
+		var s=document.getElementById("form_lessonsubject");
+		var t=document.getElementById("form_lessontype");
+		if(s!=null && t!=null)
+		{	
+			var x=s.value;
+			var y=t.value;
+			//alert(x);
+			//alert(y);
+			window.open("lessonwindow.htm?code="+activelessoncode+"&sub="+x+"&type="+y, '_blank');
+		}
+		else	
+			window.open("lessonwindow.htm?code="+activelessoncode, '_blank');
+		document.getElementById("openbutton").disabled=true;	
+	}
+}
+else
+{
+	message='The lesson '+form_lessoncode+' does not exist or is not currently active. Please request a lesson code from your tutor';
+	alert(message);
+}
+}
+function createlesson()  //this is called by students on the second time and by tutors directly
+{
+		if(usertype!='STUDENT')
+		{
+			if(confirm('Do you want to open a new window/tab and create a new lesson?') )
+			{
+				<?if($WHITEBOARD=="TWIDDLA")echo "window.open('createlesson.htm', '_blank');"; //we create a new one
+				else echo "window.open('lessonwindow.htm', '_blank');";?>
+				
+			}
+		}
+}
+</script>
+<script>
+if ( window.history.replaceState ) {
+  window.history.replaceState( null, null, "lesson.htm" );
+}
+</script>
+</body>
+</html>
+
+

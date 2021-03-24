@@ -1,0 +1,251 @@
+<?php
+//ini_set('display_errors', 1);
+//ini_set('display_startup_errors', 1);
+//error_reporting(E_ALL);
+require './security/header.php';
+require './security/session_helper.php';
+require 'sendEmail.php';
+if (!Session_Helper::isLogged()) {
+    echo '<p>Directory access is forbidden.</p>';
+    exit;
+}
+
+//echo $_REQUEST['acceptlesson'];
+?>
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="ISO-8859-1">
+        <title>Opportunities Info</title>
+        <link rel="stylesheet" href="vendor/foundation/css/foundation.min.css">       
+        <script>
+            function cerrar()
+
+            {
+            window.open('','_self').close()
+            }
+        </script> 
+    </head>
+    <body style="background-color: #eeeeee">
+        <?php 
+
+       
+
+        $requestcode = filter_input(INPUT_GET, 'requestcode');
+        if (!empty($requestcode)) {
+            //include './conexion/conexion.php';
+            include './security/constants.php';
+
+            $sqlQuery = "select A.*,B.LESSONTYPE AS LESSONTYPE_ID from LESSONREQUESTS2 A inner join LESSONTYPES B on B.CODE = A.LESSONTYPE where A.`CODE`=$requestcode LIMIT 1";
+            $conn = openDB();
+            $resultSet = genesis_exec($conn, $sqlQuery);
+            $lessonRequest = genesis_fetch_row($resultSet);
+
+            $_param_tutor_code = Session_Helper::getUserCode();
+            $_param_requestcode = $requestcode;
+
+            $acceptlesson = filter_input(INPUT_GET, 'acceptlesson');
+            $decline = filter_input(INPUT_GET, 'decline');
+
+            if (!empty($acceptlesson) && $lessonRequest['STATUS'] == 0) {
+
+                $lessondate= $_REQUEST['lessondate_m'];
+                $fromtime =  $_REQUEST['from_time'];
+                $totime =  $_REQUEST['to_time'];
+
+                $sqlQueryUpdate = "UPDATE `LESSONREQUESTS2`
+                                        SET 
+                                        `STATUS` = '1',
+                                        `TUTOR`  =  $_param_tutor_code";
+                if (!empty($lessondate))  {
+                    $sqlQueryUpdate.=", `LESSON_DATE` = '$lessondate' ";
+
+                };
+                if (!empty($fromtime))  {
+                    $sqlQueryUpdate.=", `TIME_FROM` = '$fromtime' ";
+
+                };
+                if (!empty($totime))  {
+                    $sqlQueryUpdate.=", `TIME_TO` = '$totime' ";
+
+                };
+
+                $sqlQueryUpdate.= " WHERE
+                                        (`CODE` = $_param_requestcode) LIMIT 1";
+                //echo $sqlQueryUpdate;
+                genesis_exec($conn, $sqlQueryUpdate);
+                $lessonRequest['STATUS'] = 1;
+                $message= true;
+
+                //Enviar email de confirmación
+
+                $consulta = "SELECT NAME, EMAIL FROM USERS2 WHERE USERCODE ='".$lessonRequest['USERCODE']."'";
+                $resultSetemail = genesis_exec($conn, $consulta);
+                $emailRequest = genesis_fetch_row($resultSetemail);
+
+                $consulta2 = "SELECT NAME, EMAIL FROM USERS2 WHERE USERCODE ='".$lessonRequest['TUTOR']."'";
+                $resultSetemail2 = genesis_exec($conn, $consulta2);
+                $emailRequest2 = genesis_fetch_row($resultSetemail2);
+                
+                $fechaleccion = date("yy/m/d", strtotime( $lessonRequest['LESSON_DATE']));
+                $hora1 = $lessonRequest['TIME_FROM'];
+
+                $email = file_get_contents("mailer/email1.html");    
+                $email = str_replace("{{nombretutor}}", ucfirst($emailRequest2['NAME']), $email);
+                $email = str_replace("{{fecha}}", ucfirst($fechaleccion), $email);
+                $email = str_replace("{{hora}}", ucfirst($hora1), $email);
+
+                enviarEmail($emailRequest['EMAIL'], "New lesson scheduled",$email,$email);
+                //echo "ok";
+            }
+             if (!empty($decline))  {
+
+               
+                $sqlQueryUpdate = "UPDATE `LESSONREQUESTS2` SET  `STATUS` = '4'";            
+
+                $sqlQueryUpdate.= " WHERE  (`CODE` = $_param_requestcode) LIMIT 1";
+
+                //echo $sqlQueryUpdate;
+                genesis_exec($conn, $sqlQueryUpdate);
+                $lessonRequest['STATUS'] = 4;
+                $close= true;
+            }
+
+            genesis_commit($conn);
+
+            closeDB($conn);
+        }
+      
+        ?>
+        <div class="grid-container">
+            <div class="grid-y grid-padding-y">
+                <div class="large-12 cell">
+                    <div class="card">
+                        <form id="accept_lesson_form" >
+                        <table class="unstriped">
+                            <tbody>
+                                <tr><th colspan="2" style="text-align: center"> <?php echo $LESSON_TYPE[$lessonRequest['LESSONTYPE_ID']]; ?> </th></tr>
+<?php if (in_array($lessonRequest['LESSONTYPE_ID'], array(1, 2, 3))): ?>                            
+                                    <tr>
+                                        <th style="width: 20%">Assignment:</th>
+                                        <td><a href="students/assignments/<?php echo $lessonRequest['ATTACH_DOCUMENT']; ?>" download="<?php echo $lessonRequest['ATTACH_DOCUMENT']; ?>"><?php echo $lessonRequest['ATTACH_DOCUMENT']; ?></a></td>
+                                    </tr>
+                                    <tr>
+                                        <th style="width: 20%">Comments:</th>
+                                        <td><?php echo $lessonRequest['PROBLEM_COMMENTS']; ?></td>
+                                    </tr>
+                                   
+    <?php if ($lessonRequest['LESSONTYPE_ID'] == 1):
+    $fechaminima = strtotime( $lessonRequest['AVAILABILITY_OPTION1']);
+    $fechaminimaformato = date("yy-m-d", $fechaminima);
+
+
+    $fechamaxima = strtotime( $lessonRequest['AVAILABILITY_OPTION2']);
+    $fechamaximaformato = date("yy-m-d", $fechamaxima);
+
+    $horaminima = strtotime( $lessonRequest['AVAILABILITY_TIME1']);
+    $horaminimaformato = date("H:i", $horaminima);
+
+    //echo '<pre>'; print_r($lessonRequest); echo '</pre>';
+    
+
+    $horamaxima = strtotime( $lessonRequest['AVAILABILITY_TIME2']);
+    $horamaximaformato = date("H:i", $horamaxima);
+    //echo $horamaximaformato;
+
+    
+    ?> 
+                                        <tr>
+                                            <th><strong>Available Date:</strong>
+                                                </th>
+                                            <td>  <table style="width: 50%;"><tr><td><div>From:&nbsp; <?php echo $lessonRequest['AVAILABILITY_OPTION1']; ?></div></td>
+                                                             <td> <div>To: &nbsp;<?php echo $lessonRequest['AVAILABILITY_OPTION2']; ?></div></td>
+                                                            </tr>
+                                                  </table>                                  
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th><strong>Available Time:</strong>
+                                                </th>
+                                            <td>  <table style="width: 50%;"><tr><td><div>From:&nbsp; <? echo $horaminimaformato; ?></div></td>
+                                                             <td> <div>To: &nbsp;<? echo $horamaximaformato; ?></div></td>
+                                                            </tr>
+                                                  </table>                                  
+                                            </td>
+                                        </tr>
+
+                                        <tr>
+                                            <th><strong>Lesson Date:</strong>
+                                                </th>
+                                            <td> 
+                                                <div style="width: 180px;">
+                                                <input type="date" name="lessondate_m" step="1" min="<? echo $fechaminimaformato;?>" max="<? echo $fechamaximaformato;?>" value="<? echo $fechaminimaformato;?>" required>
+                                                </div>
+                                                                                
+                                            </td>
+                                        </tr>
+
+                                        <tr>
+                                            <th><strong>Lesson Time:</strong>
+                                                </th>
+                                            <td>  <table style="width: 60%;"><tr><td><div>From:&nbsp;
+                                                <input type="time" id="from_time" name="from_time" min="<? echo $horaminimaformato; ?>" max="<? echo $horamaximaformato; ?>" value="<? echo $horaminimaformato; ?>" required>
+                                               </div></td>
+                                                             <td> 
+                                                                 <div>To: &nbsp;<input type="time" id="to_time" name="to_time"  min="<? echo $horaminimaformato; ?>" max="<? echo $horamaximaformato; ?>" value="<? echo $horaminimaformato; ?>" required></div>
+                                                                </td>
+                                                            </tr>
+                                                  </table>                                  
+                                            </td>
+                                        </tr>
+                                       
+
+    <?php  endif; ?>
+                                    
+                                   
+                                    <tr><td colspan="2" style="text-align: center">
+                                               
+                                           <input type="hidden" name="requestcode" value="<?php echo $requestcode; ?>">
+
+                                           
+                                                <table style="text-align: center; width: 100%;" >
+                                                    <tr>
+                                                        <td>
+                                                            <button type="submit" form="accept_lesson_form" name="acceptlesson" value="1" class="success button">Accept lesson</button>
+                                                            
+                                                            <button type="submit"  form="accept_lesson_form" name="decline" value="1" class="cancel button">Decline</button>
+                                                        </td>
+                                             
+                                                        </tr>
+                                                </table>
+    <?php if ($message == true): ?> <br>
+                                                <a>the lesson has been accepted!</a>
+                                                <?php endif; ?>
+                                            </td>
+                                        </tr>
+                                            
+                                      
+<?php endif; ?>
+
+                            </tbody>
+                        </table>
+                    </form>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <script src="vendor/foundation/js/vendor/jquery.js"></script>
+        <script src="vendor/foundation/js/vendor/what-input.js"></script>
+        <script src="vendor/foundation/js/vendor/foundation.js"></script>
+        <script src="vendor/foundation/js/app.js"></script>
+        <?php if ($close == true): ?>
+
+        <script>
+            cerrar();
+        </script>
+        <?php endif; ?>
+    </body>
+</html>

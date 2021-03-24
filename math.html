@@ -1,0 +1,586 @@
+<?include("security/header.php");?>
+<!doctype html>
+<!--[if IE 7 ]>    <html lang="en-gb" class="isie ie7 oldie no-js"> <![endif]-->
+<!--[if IE 8 ]>    <html lang="en-gb" class="isie ie8 oldie no-js"> <![endif]-->
+<!--[if IE 9 ]>    <html lang="en-gb" class="isie ie9 no-js"> <![endif]-->
+<!--[if (gt IE 9)|!(IE)]><!--> <html lang="en-gb" class="no-js"> <!--<![endif]-->
+
+
+<head>
+	<title>xtutor.online</title>
+	
+	<meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+	<meta name="keywords" content="" />
+	<meta name="description" content="" />
+    
+    <!-- Favicon --> 
+	<link rel="shortcut icon" href="images/favicon.html">
+    
+    <!-- this styles only adds some repairs on idevices  -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Google fonts - witch you want to use - (rest you can just remove) -->
+   	<link href='http://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic,700,700italic,800,800italic' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Raleway:100,200,300,400,500,600,700,800,900' rel='stylesheet' type='text/css'>
+    
+    <!--[if lt IE 9]>
+		<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+	<![endif]-->
+    
+    <!-- ######### CSS STYLES ######### -->
+	
+    <link rel="stylesheet" href="css/reset.css" type="text/css" />
+	<link rel="stylesheet" href="css/style.css" type="text/css" />
+    
+    <link rel="stylesheet" href="css/font-awesome/css/font-awesome.min.css">
+	
+    
+    <!-- responsive devices styles -->
+	<link rel="stylesheet" media="screen" href="css/responsive-leyouts.css" type="text/css" />
+    
+    <!-- animations -->
+    <link href="js/animations/css/animations.min.css" rel="stylesheet" type="text/css" media="all" />
+    
+	
+	
+<!-- just remove the below comments witch color skin you want to use -->
+    <!--<link rel="stylesheet" href="css/colors/red.css" />-->
+    <!--<link rel="stylesheet" href="css/colors/blue.css" />-->
+    <!--<link rel="stylesheet" href="css/colors/cyan.css" />-->
+    <!--<link rel="stylesheet" href="css/colors/orange.css" />-->
+    <!--<link rel="stylesheet" href="css/colors/lightblue.css" />-->
+    <!--<link rel="stylesheet" href="css/colors/pink.css" />-->
+    <!--<link rel="stylesheet" href="css/colors/purple.css" />-->
+    <!--<link rel="stylesheet" href="css/colors/bridge.css" />-->
+    <!--<link rel="stylesheet" href="css/colors/slate.css" />-->
+    <!--<link rel="stylesheet" href="css/colors/yellow.css" />-->
+    <!--<link rel="stylesheet" href="css/colors/darkred.css" />-->
+
+<!-- just remove the below comments witch bg patterns you want to use --> 
+    <!--<link rel="stylesheet" href="css/bg-patterns/pattern-default.css" />-->
+    <!--<link rel="stylesheet" href="css/bg-patterns/pattern-one.css" />-->
+    <!--<link rel="stylesheet" href="css/bg-patterns/pattern-two.css" />-->
+    <!--<link rel="stylesheet" href="css/bg-patterns/pattern-three.css" />-->
+    <!--<link rel="stylesheet" href="css/bg-patterns/pattern-four.css" />-->
+    <!--<link rel="stylesheet" href="css/bg-patterns/pattern-five.css" />-->
+    <!--<link rel="stylesheet" href="css/bg-patterns/pattern-six.css" />-->
+    <!--<link rel="stylesheet" href="css/bg-patterns/pattern-seven.css" />-->
+    <!--<link rel="stylesheet" href="css/bg-patterns/pattern-eight.css" />-->
+    <!--<link rel="stylesheet" href="css/bg-patterns/pattern-nine.css" />-->
+    <!--<link rel="stylesheet" href="css/bg-patterns/pattern-ten.css" />-->
+    <!--<link rel="stylesheet" href="css/bg-patterns/pattern-eleven.css" />-->
+    <!--<link rel="stylesheet" href="css/bg-patterns/pattern-twelve.css" />-->
+    <!--<link rel="stylesheet" href="css/bg-patterns/pattern-thirteen.css" />-->
+    
+    <!-- style switcher -->
+    <!--<link rel = "stylesheet" media = "screen" href = "js/style-switcher/color-switcher.css" />-->
+    
+    <!-- mega menu -->
+    <link href="js/mainmenu/stickytwo.css" rel="stylesheet">
+    <link href="js/mainmenu/bootstrap.min.css" rel="stylesheet">
+    <link href="js/mainmenu/demo.css" rel="stylesheet">
+    <link href="js/mainmenu/menu.css" rel="stylesheet">
+    
+    <!-- slide panel -->
+    <link rel="stylesheet" type="text/css" href="js/slidepanel/slidepanel.css">
+    
+	
+	<!-- Master Slider -->
+    <link rel="stylesheet" href="js/masterslider/style/masterslider.css" />
+    <link rel="stylesheet" href="js/masterslider/skins/default/style.css" />
+    <link rel="stylesheet" href="js/masterslider/style.css" />
+    
+    <link href='js/masterslider/style/ms-staff-style.css' rel='stylesheet' type='text/css'>
+	
+	<!-- cubeportfolio -->
+	<link rel="stylesheet" type="text/css" href="js/cubeportfolio/cubeportfolio.min.css">
+    
+	<!-- tabs -->
+    <link rel="stylesheet" type="text/css" href="js/tabs/assets/css/responsive-tabs.css">
+    <link rel="stylesheet" type="text/css" href="js/tabs/assets/css/responsive-tabs2.css">
+    <link rel="stylesheet" type="text/css" href="js/tabs/assets/css/responsive-tabs3.css">
+
+	<!-- carousel -->
+    <link rel="stylesheet" href="js/carousel/flexslider.css" type="text/css" media="screen" />
+ 	<link rel="stylesheet" type="text/css" href="js/carousel/skin.css" />
+    
+    <!-- progressbar -->
+  	<link rel="stylesheet" href="js/progressbar/ui.progress-bar.css">
+    
+    <!-- accordion -->
+    <link rel="stylesheet" href="js/accordion/accordion.css" type="text/css" media="all">
+    
+    <!-- Lightbox -->
+    <link rel="stylesheet" type="text/css" href="js/lightbox/jquery.fancybox.css" media="screen" />
+    
+    
+    <script>
+        function cargarTutores(st,a,s,campo) {
+          var c = document.getElementById(campo);
+          c.innerHTML="";
+            fetch('https://www.xtutor.online/sujetos3.php?f='+a+'&st='+st+'&s='+s)
+                .then(res => {
+                    return res.text();
+                })
+                .then(data => {
+                    var c = document.getElementById(campo);
+                    //console.log(data);
+                    c.innerHTML=data;
+                });
+        }
+    </script>
+     <script>
+        function drawBox(lienzo, area) {
+        console.log(lienzo);
+        var c = document.getElementById(lienzo);
+        var ctx = c.getContext("2d");
+        ctx.fillStyle = "Red";
+        ctx.fillRect(0,area,24,24);
+        
+        image2 = new Image();
+        image2.src = 'https://www.xtutor.online/images/start-tp.png';
+        image2.onload = function() {
+            ctx.drawImage(image2, 0, 0, 25, 25);
+        }
+        
+        }
+
+        function redirigir(tutor, campo, sujeto, tipo)
+        { 
+          var url = "redirect1.php?t="+tutor+"&c="+campo+"&s="+sujeto+"&l="+tipo;
+          window.location.href =url;
+      
+      }
+      
+          </script>
+   <style>
+   
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  word-wrap: break-word;
+  background-color: #fff;
+  background-clip: border-box;
+  border: 1px solid rgba(0, 0, 0, 0.125);
+  border-radius: 0.25rem;
+}
+
+.card > hr {
+  margin-right: 0;
+  margin-left: 0;
+}
+
+.card > .list-group {
+  border-top: inherit;
+  border-bottom: inherit;
+}
+
+.card > .list-group:first-child {
+  border-top-width: 0;
+  border-top-left-radius: calc(0.25rem - 1px);
+  border-top-right-radius: calc(0.25rem - 1px);
+}
+
+.card > .list-group:last-child {
+  border-bottom-width: 0;
+  border-bottom-right-radius: calc(0.25rem - 1px);
+  border-bottom-left-radius: calc(0.25rem - 1px);
+}
+
+.card-body {
+  flex: 1 1 auto;
+  min-height: 1px;
+  padding: 1.25rem;
+}
+
+.card-title {
+  margin-bottom: 0.75rem;
+}
+
+.card-subtitle {
+  margin-top: -0.375rem;
+  margin-bottom: 0;
+}
+
+.card-text:last-child {
+  margin-bottom: 0;
+}
+
+.card-link:hover {
+  text-decoration: none;
+}
+
+.card-link + .card-link {
+  margin-left: 1.25rem;
+}
+
+.card-header {
+  padding: 0.75rem 1.25rem;
+  margin-bottom: 0;
+  background-color: rgba(0, 0, 0, 0.03);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.card-header:first-child {
+  border-radius: calc(0.25rem - 1px) calc(0.25rem - 1px) 0 0;
+}
+
+.card-header + .list-group .list-group-item:first-child {
+  border-top: 0;
+}
+
+.card-footer {
+  padding: 0.75rem 1.25rem;
+  background-color: rgba(0, 0, 0, 0.03);
+  border-top: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.card-footer:last-child {
+  border-radius: 0 0 calc(0.25rem - 1px) calc(0.25rem - 1px);
+}
+
+
+    .idpic {
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 5px;
+      width: 180px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .sticon {
+      border: 1px solid #ddd;
+      border-radius: 2px;
+      padding: 2px;
+      margin-top: -3px   ;
+      width: 22px;
+      height: 22px;
+    }
+      </style>
+</head>
+
+<body>
+
+
+<div class="site_wrapper" >
+
+
+<?include("header.htm");?>
+
+<?
+if ($_REQUEST['p']=='m')  {
+    $page="math-head.html";
+    $FIELD_ID = 0;
+    }
+elseif ($_REQUEST['p']=='n')  {
+      $page="natural-head.html";
+      $FIELD_ID = 1;
+      }
+elseif ($_REQUEST['p']=='s')  {
+        $page="social-head.html";
+        $FIELD_ID = 2;
+        }
+elseif ($_REQUEST['p']=='e')  {
+          $page="english-head.html";
+          $FIELD_ID = 3;
+          }
+      
+include($page);
+
+?>
+
+<hr>
+    
+   <div class="alileft">
+   <br>
+   <br>
+    <div class="one_half">
+    	
+        <h3><strong>What are the lessons like ?</strong></h3>
+        
+        <p>We offer live sessions as well as written tutorials.</p>
+        <br/>
+        <p>For live sessions you do not need to schedule the lesson in advance. You can just request a lesson with one of the available tutors. All our tutors are expert educators, so you will be matched with the first available one. </p>
+		<br>
+		<p>We actually have 2 types of live lessons. The quick lessons where we help you finding the answers quickly, and the comprehensive live lessons where we walk you through the resolution process step by step.</p>
+        <br>
+		<p>In written tutorials we explain how to solve a problem step by step in a written document. So this type of lessons must be requested ahead of time.</p>
+		   
+		  
+	
+	</div><!-- end section -->
+    
+    <div class="one_half last">
+    	
+		
+		<h3><strong>Types of lessons</strong></h3>
+        
+        <ul class="list_4">
+        	<li><i class="fa fa-arrow-circle-o-right"></i> Quick live lessons</li>
+            <li><i class="fa fa-arrow-circle-o-right"></i> Comprehensive live lessons</li>
+			<li><i class="fa fa-arrow-circle-o-right"></i> Written tutorials</li>
+            
+        </ul>
+		
+		
+	</div>
+    
+	
+</div>
+</div>    
+<div class="features_sec42 two three"  style="background-color: #ffffff;padding-bottom:0px;padding-top:0px">
+
+<div class="features_sec18" style="padding-bottom:0px;padding-top:0px">	
+        
+		
+        <?php include('fields.php')?>
+        
+        
+    	
+    </div>   <!-- end of subjects -->      
+	
+	</div>	
+    <div class="features_sec42 two three" style="padding-bottom:0px=;background-color:#ffffff">
+    <div class="container"  style="padding-bottom:0px">
+    
+        <h3><strong>Meet your tutors</strong></h3>
+        <br />
+        
+        <div class="one_fourth animate" data-anim-type="fadeInUp">
+        <div class="box">
+            
+            <img src="images/tutors/tutor1.jpg" alt="" class="rimg" height=240/>
+            
+            <h4>Jorge Chavez</h4>
+            <h6 class="nocaps">CEO</h6>
+            <p>MS in Applied Mathematics</p>
+            <p>Graduate certificate in Higher Education</p>
+			<p>BS in Systems Engineering</p>
+			<p>10+ years in Software Development & Data Analysis</p>
+			<p>1 semester as Middle/High School substitute teacher</p>
+			<p>3 years as Teaching Assistant in College</p>
+			<p>3 years as College Lecturer</p>
+            <br />
+            <ul>
+                <li><a href="#"><i class="fa fa-facebook"></i></a></li>
+                <li><a href="#"><i class="fa fa-twitter"></i></a></li>
+                <li><a href="#"><i class="fa fa-google-plus"></i></a></li>
+                <li><a href="#"><i class="fa fa-skype"></i></a></li>
+            </ul>
+            
+        </div>
+        </div><!-- end section -->
+        
+        <div class="one_fourth animate" data-anim-type="fadeInUp" data-anim-delay="200">
+        <div class="box">
+            
+            <img src="images/site-img55.jpg" alt="" class="rimg"  height=240/>
+            
+            <h4>Lucia Penelope</h4>
+            <h6 class="nocaps">Manager</h6>
+            
+            <p>Lorem ipsum dolor amet, consectetue Radipiscing elit et Suspendisse et justo. mattis commodo augue. Aliquam ornare hendrerit augue cars.</p>
+            <br />
+            <ul>
+                <li><a href="#"><i class="fa fa-facebook"></i></a></li>
+                <li><a href="#"><i class="fa fa-twitter"></i></a></li>
+                <li><a href="#"><i class="fa fa-google-plus"></i></a></li>
+                <li><a href="#"><i class="fa fa-skype"></i></a></li>
+            </ul>
+            
+        </div>
+        </div><!-- end section -->
+        
+        <div class="one_fourth animate"data-anim-type="fadeInUp" data-anim-delay="400">
+        <div class="box">
+            
+            <img src="images/site-img56.jpg" alt="" class="rimg" height=240/>
+            
+            <h4>Mark Adraison</h4>
+            <h6 class="nocaps">Marketing</h6>
+            
+            <p>Lorem ipsum dolor amet, consectetue Radipiscing elit et Suspendisse et justo. mattis commodo augue. Aliquam ornare hendrerit augue cars.</p>
+            <br />
+            <ul>
+                <li><a href="#"><i class="fa fa-facebook"></i></a></li>
+                <li><a href="#"><i class="fa fa-twitter"></i></a></li>
+                <li><a href="#"><i class="fa fa-google-plus"></i></a></li>
+                <li><a href="#"><i class="fa fa-skype"></i></a></li>
+            </ul>
+            
+        </div>
+        </div><!-- end section -->
+        
+        <div class="one_fourth last animate" data-anim-type="fadeInUp" data-anim-delay="600">
+        <div class="box">
+            
+            <img src="images/site-img57.jpg" alt="" class="rimg" height=240/>
+            
+            <h4>Anya Siennadia</h4>
+            <h6 class="nocaps">Support</h6>
+            
+            <p>Lorem ipsum dolor amet, consectetue Radipiscing elit et Suspendisse et justo. mattis commodo augue. Aliquam ornare hendrerit augue cars.</p>
+            <br />
+            <ul>
+                <li><a href="#"><i class="fa fa-facebook"></i></a></li>
+                <li><a href="#"><i class="fa fa-twitter"></i></a></li>
+                <li><a href="#"><i class="fa fa-google-plus"></i></a></li>
+                <li><a href="#"><i class="fa fa-skype"></i></a></li>
+            </ul>
+            
+        </div>
+        </div><!-- end section -->
+        
+    </div>
+    </div><!-- end team section -->
+    
+    <div class="container">
+    	
+</div>
+</div><!-- end content area -->
+
+<?include("footer.htm")?>
+</div>
+
+    
+<!-- ######### JS FILES ######### -->
+<!-- get jQuery from the google apis -->
+<script type="text/javascript" src="js/universal/jquery.js"></script>
+
+<!-- style switcher -->
+<script src="js/style-switcher/jquery-1.js"></script>
+<script src="js/style-switcher/styleselector.js"></script>
+
+<!-- animations -->
+<script src="js/animations/js/animations.min.js" type="text/javascript"></script>
+<script src="js/animations/js/smoothscroll.js" type="text/javascript"></script>
+
+<!-- slide panel -->
+<script type="text/javascript" src="js/slidepanel/slidepanel.js"></script>
+<!-- Master Slider -->
+<script src="js/masterslider/jquery.easing.min.js"></script>
+<script src="js/masterslider/masterslider.min.js"></script>
+<script type="text/javascript">
+(function($) {
+ "use strict";
+
+var slider = new MasterSlider();
+ slider.setup('masterslider' , {
+     width: 1400,    // slider standard width
+     height:720,   // slider standard height
+     space:0,
+	 speed:45,
+     fullwidth:true,
+     loop:true,
+     preload:0,
+     autoplay:true,
+	 view:"basic"
+});
+// adds Arrows navigation control to the slider.
+slider.control('arrows');
+slider.control('bullets');
+
+})(jQuery);
+</script>
+
+
+
+
+<!-- mega menu -->
+<script src="js/mainmenu/bootstrap.min.js"></script> 
+<script src="js/mainmenu/customeUI.js"></script> 
+
+<!-- jquery jcarousel -->
+<script type="text/javascript" src="js/carousel/jquery.jcarousel.min.js"></script>
+
+<!-- Toggle -->
+<script type="text/javascript">
+(function($) {
+ "use strict";
+
+    $(document).ready(function(){
+      $("#colosebut1").click(function(){
+        $("#div1").fadeOut("slow");
+      });
+      $("#colosebut2").click(function(){
+        $("#div2").fadeOut("slow");
+      });
+      $("#colosebut3").click(function(){
+        $("#div3").fadeOut("slow");
+      });
+      $("#colosebut4").click(function(){
+        $("#div4").fadeOut("slow");
+      });
+    
+    });
+
+})(jQuery);
+</script>
+
+<!-- scroll up -->
+<script src="js/scrolltotop/totop.js" type="text/javascript"></script>
+
+<!-- tabs -->
+<script src="js/tabs/assets/js/responsive-tabs.min.js" type="text/javascript"></script>
+
+<!-- jquery jcarousel -->
+<script type="text/javascript">
+(function($) {
+ "use strict";
+
+	jQuery(document).ready(function() {
+			jQuery('#mycarouselthree').jcarousel();
+	});
+	
+})(jQuery);
+</script>
+
+<!-- accordion -->
+<script type="text/javascript" src="js/accordion/custom.js"></script>
+
+<!-- sticky menu -->
+<script type="text/javascript" src="js/mainmenu/sticky.js"></script>
+<script type="text/javascript" src="js/mainmenu/modernizr.custom.75180.js"></script>
+
+<!-- progress bar -->
+<script src="js/progressbar/progress.js" type="text/javascript" charset="utf-8"></script>
+  
+<script type="text/javascript">
+(function($) {
+ "use strict";
+
+	var _gaq = _gaq || [];
+	_gaq.push(['_setAccount', 'UA-374977-27']);
+	_gaq.push(['_trackPageview']);
+	
+	(function() {
+	  var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+	  ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+	  var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+	})();
+
+})(jQuery);
+</script>
+
+<!-- cubeportfolio -->
+<script type="text/javascript" src="js/cubeportfolio/jquery.cubeportfolio.min.js"></script>
+<script type="text/javascript" src="js/cubeportfolio/main.js"></script>
+<script type="text/javascript" src="js/cubeportfolio/main5.js"></script>
+<script type="text/javascript" src="js/cubeportfolio/main6.js"></script>
+
+<!-- carousel -->
+<script defer src="js/carousel/jquery.flexslider.js"></script>
+<script defer src="js/carousel/custom.js"></script>
+
+<!-- lightbox -->
+<script type="text/javascript" src="js/lightbox/jquery.fancybox.js"></script>
+<script type="text/javascript" src="js/lightbox/custom.js"></script>
+
+
+
+</body>
+
+</html>

@@ -1,0 +1,594 @@
+<?php
+$DEBUG_MODE=0;
+//THIS FILE IS ONLY FOR STUDENTS
+include("security/header2.php");
+if(!$hay_sesion )Header("Location:login2.htm");
+$con=openDB();
+$LESSONFOUND=0;
+$form_lessoncode=$_POST['form_lessoncode'];  //first time this will be empty
+$form_lessontype=$_POST['form_lessontype'];  //first time this will be empty
+$form_lessonsubject=$_POST['form_lessonsubject'];  //first time this will be empty
+$form_requestlesson=$_POST['form_requestlesson'];  //first time this will be empty
+$form_field=$_POST['form_field'];//first time this will be empty
+if($form_lessontype=='')$form_lessontype=0;
+if($form_lessonsubject=='')$form_lessonsubject=0;
+if($form_requestlesson=="")$form_requestlesson="no";
+
+if($USER_TYPE!="STUDENT") exit(); //this file only for students
+
+//NOTE: WE ONLY HAVE 4 SESSION VARIABLES
+
+    //FIRST CHECK IF THERE ARE PAST LESSONREQUEST IN STATUS = 1 THAT I NEVER ENTERED (STATUS=1 AND TIME>MAXWAITINGTIME THEN STATUS=4)	 
+	//WITH THIS IT SHOULD BE MAXIMUM ONE LESSON WITH STOPPED=0 
+	$query="UPDATE LESSONREQUESTS2 SET STATUS=4 WHERE USERCODE='$USER_CODE' AND STATUS=1 AND TIME_TO_SEC(TIMEDIFF(NOW(),TUTORTIME))>$MAXWAITINGTIME"; 
+	$resultado=genesis_exec($con,$query);
+		
+	
+   //SECOND CHECK IF THERE ARE PAST LESSONREQUEST IN STATUS = 2 THAT I NEVER TERMINATED (STATUS=2 AND TIME>MAXINACTIVETIME THEN STATUS=3)
+
+    //IF IT IS ME WHO DID LEAVE THE LESSON I JUST CLOSE THE LESSON, IF IT WAS TUTOR AND I AM STILL IN THE LESSON THEN THERE WILL BE A MESSAGE INSIDE THE LESSON (lessonwindowheader)
+    $query="UPDATE LESSONREQUESTS2 SET STATUS=3 WHERE USERCODE='$USER_CODE' AND STATUS=2 AND TIME_TO_SEC(TIMEDIFF(NOW(),LASTUPDATESTUDENT))>$MAXINACTIVETIME"; 
+	$resultado=genesis_exec($con,$query);
+	
+ 
+    //NOW STATUS TRANSITIONS	
+    if($form_requestlesson=="yes")  //in case we reload the page it is going to be on hold and it will not insert the tables again   
+	{
+	    //validate there is no active lesson
+		//ANY TIME THERE MUST BE ONLY ONE ACTIVE REQUEST (STATUS=0 OR 1) OR IN PROGRESS (STATUS=2)
+		if ($DEBUG_MODE)echo "2";
+		$query="SELECT * FROM LESSONREQUESTS2 WHERE USERCODE='$USER_CODE' AND STATUS IN (0,1,2)";
+		$resultado=genesis_exec($con,$query);
+		if(!genesis_fetch_row($resultado))
+        {		
+			$school=$_SESSION['SCHOOLTYPE'];
+			$query="INSERT INTO LESSONREQUESTS2 (USERCODE,REQUESTTIME,SCHOOLTYPE,FIELD,LESSONSUBJECT,LESSONTYPE) VALUES('$USER_CODE',NOW(),$school,$form_field,$form_lessonsubject,$form_lessontype)";
+			$resultado=genesis_exec($con,$query);
+			$form_requestlesson="hold";						
+		}
+		else
+		{
+			//already a pending request we can not add new one
+			echo "We can not add a new request, there is already a pending request";
+			$form_requestlesson="hold";
+		}		
+	}
+	if($form_requestlesson=="cancel")  //in case we reload the page it is going to be on hold and it will not insert the tables again   
+	{
+	    if ($DEBUG_MODE)echo "3";
+		//WE CAN ONLY CANCEL IF THE LESSON DID NOT START YET
+		//AT ANY TIME THERE IS ONLY ONE ACTIVE LESSON REQUEST IN STATUS =0,1 OR 2
+		$query="UPDATE LESSONREQUESTS2 SET STATUS=4 WHERE USERCODE='$USER_CODE' AND (STATUS=0 OR STATUS=1)";
+		$resultado=genesis_exec($con,$query);
+		$form_requestlesson="no";					
+	}
+	
+	
+	$LESSON_CODEVAR='';
+	$STATUS=-1;
+	//if($STATUS==0)echo "status=0";
+	if($form_requestlesson=="hold" || $form_requestlesson=="no")      //we check if a tutor accepted or if there is pending request
+	{
+	    if ($DEBUG_MODE)echo "4";
+		//SEE CONSTANTS FILES TO SEE THE STATUS 
+		//ONLY ACTIVE REQUEST
+		//ANY TIME THERE MUST BE ONLY ONE ACTIVE REQUEST (STATUS=0 OR 1) OR IN PROGRESS (STATUS=2)
+		$query="SELECT FIELD,LESSONSUBJECT,LESSONTYPE,STATUS,SCHOOLTYPE,LESSONCODE FROM LESSONREQUESTS2 WHERE USERCODE='$USER_CODE' AND STATUS IN (0,1,2) ";
+		//looks for requests that are either new(0) tutor assigned(1) or lesson in progress (2)
+		//IF STATUS ==0 THEN IT JUST USES THE DATA OF THE REQUESTS
+		//IF STATUS==1 THEN IT COMMUNICATES THE STUDENT TO ENTER THE LESSON
+		//IF STATUS==2 AND MYLESSONWINDOWCLOSED THEN IT TELLS THE STUDENT TO GO BACK TO LESSON
+		$resultado=genesis_exec($con,$query);
+		if(genesis_fetch_row($resultado))
+		{
+		  $form_field=genesis_result($resultado,1);
+		  $form_lessonsubject=genesis_result($resultado,2);
+		  $form_lessontype=genesis_result($resultado,3);
+		  $STATUS=genesis_result($resultado,4);
+		  $form_schooltype=genesis_result($resultado,5);
+		}
+		//also we need to validate that there are not other active or in progress (active status<>3 and <>4) request before inserting a new request 
+		if($STATUS==1)  //TUTOR HAS ACCEPTED
+		{
+			if ($DEBUG_MODE)echo "4.1";
+			$LESSON_CODEVAR=genesis_result($resultado,6);
+			$LESSONFOUND=1;			
+		}		
+		$form_requestlesson=="hold";  //WE KEEP IT IN THIS STATE 
+	}
+	
+	
+	
+	/* IF WE WANT TO SHOW A MESSAGE TELLING THE STUDENT THAT TUTOR CANCELLED THE REQUEST WE WILL NEEED TO SAVE THE LESSONREQUEST AT THE TIME OF SUBMITTING THE REQUEST
+	// ( SAVING IT IN form or session varible ) AND THEN LOOK AT THE TABLE FOR THAT REQUEST AND IF IT IS ON STATUS==4 THEN WE SHOW A MESSAGE
+    //	PROBABLY MORE CLEAR, EFFICIENT AND STRAIGTH FORWARD IS TO SHOW A COUNTDOWN TIMER WHEN TUTOR IS FOUND SO STUDENT KNOW HE HAS LIMITED TIME 
+	if($form_requestlesson=="hold")  //we check if the tutor left the lesson     
+	{
+	    if ($DEBUG_MODE)echo "5";
+		$query="SELECT * FROM LESSONREQUESTS2 WHERE USERCODE='$USER_CODE' AND LESSONCODE=$LESSON_CODEVAR AND STATUS=4 "; //cancelled
+		$res=genesis_exec($con,$query);
+		if(genesis_fetch_row($res))  //TUTOR HAS ACCEPTED then student did not enter on time so tutor left
+		{
+			if ($DEBUG_MODE)echo "5.1";
+			$STATUS=4;
+			$LESSON_CODEVAR="";
+			$LESSONFOUND=0; 
+			$form_requestlesson=="no";			
+		}		   
+	}*/	
+
+	
+if($form_field!='') //second time (page reloaded)
+{
+    if ($DEBUG_MODE)echo "8";
+	if($form_schooltype!="")$SCHOOLTYPE=$form_schooltype;
+	$query="SELECT SUBJECTCODE,DESCRIPTION FROM SUBJECTS WHERE FIELD=$form_field AND SCHOOLTYPE=$SCHOOLTYPE";
+	$resultado=genesis_exec($con,$query);
+	$i=0;
+	while(genesis_fetch_row($resultado))
+    { 	
+		$SUBJECTS_CODES[$i]=genesis_result($resultado,1);
+		$SUBJECTS_NAMES[$i]=genesis_result($resultado,2); 
+		//echo($SUBJECTS_CODES[$i]);
+		$i++;	
+	}	
+	$query="SELECT CODE,DESCRIPTION FROM LESSONTYPES WHERE FIELD=$form_field AND SCHOOLTYPE=$SCHOOLTYPE";
+	$resultado=genesis_exec($con,$query);
+	$i=0;
+	while(genesis_fetch_row($resultado))
+    { 	
+		$LESSONTYPES_CODES[$i]=genesis_result($resultado,1);
+		$LESSONTYPES_NAMES[$i]=genesis_result($resultado,2); 
+		//Echo($LESSONTYPES_CODES[$i]);
+		//echo($LESSONTYPES_NAMES[$i]);
+		$i++;	
+	}
+	
+}
+
+
+//REMEMBER AT EACH TIME THERE IS ONLY ONE LESSON IN STATUS 0,1 OR 2	
+//if the lesson already exists (lesson window opened) then we only enable the open button it it was closed
+$query="SELECT TIME_TO_SEC(TIMEDIFF(NOW(),LASTUPDATESTUDENT))  FROM LESSONREQUESTS2 WHERE USERCODE='$USER_CODE' AND STATUS=2";
+$resultado=genesis_exec($con,$query);
+$MYLESSONWINDOWCLOSED=0; 
+if(genesis_fetch_row($resultado)) 
+{ 	
+	$DIFF=genesis_result($resultado,1);
+//echo "DIFF=$DIFF";
+	if($DIFF>$RELOAD/1000)
+	{
+		$MYLESSONWINDOWCLOSED=1;				
+	}
+	else
+		$MYLESSONWINDOWCLOSED=0;			
+}
+genesis_commit($con);
+closeDB($con);		
+?>
+<!doctype html>
+<!--[if IE 7 ]>    <html lang="en-gb" class="isie ie7 oldie no-js"> <![endif]-->
+<!--[if IE 8 ]>    <html lang="en-gb" class="isie ie8 oldie no-js"> <![endif]-->
+<!--[if IE 9 ]>    <html lang="en-gb" class="isie ie9 no-js"> <![endif]-->
+<!--[if (gt IE 9)|!(IE)]><!--> <html lang="en-gb" class="no-js"> <!--<![endif]-->
+<head>
+	<title>xtutor.online</title>
+	
+	<meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+	<meta name="keywords" content="" />
+	<meta name="description" content="" />
+    
+    <!-- Favicon --> 
+	<link rel="shortcut icon" href="images/favicon.html">
+    
+    <!-- this styles only adds some repairs on idevices  -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Google fonts - witch you want to use - (rest you can just remove) -->
+   	<link href='https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic,700,700italic,800,800italic' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css?family=Raleway:100,200,300,400,500,600,700,800,900' rel='stylesheet' type='text/css'>
+    
+    <!--[if lt IE 9]>
+		<script src="https://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+	<![endif]-->
+    
+    <!-- ######### CSS STYLES ######### -->
+	
+    <link rel="stylesheet" href="css/reset.css" type="text/css" />
+	<link rel="stylesheet" href="css/style.css" type="text/css" />
+    
+    <link rel="stylesheet" href="css/font-awesome/css/font-awesome.min.css">
+    
+    <!-- responsive devices styles -->
+	<link rel="stylesheet" media="screen" href="css/responsive-leyouts.css" type="text/css" />
+    
+    <!-- animations -->
+    <link href="js/animations/css/animations.min.css" rel="stylesheet" type="text/css" media="all" />
+    
+  
+    <!-- style switcher -->
+    <link rel = "stylesheet" media = "screen" href = "js/style-switcher/color-switcher.css" />
+    
+    <!-- mega menu -->
+    <link href="js/mainmenu/stickytwo.css" rel="stylesheet">
+    <link href="js/mainmenu/bootstrap.min.css" rel="stylesheet">
+    <link href="js/mainmenu/demo.css" rel="stylesheet">
+    <link href="js/mainmenu/menu.css" rel="stylesheet">
+    
+    <!-- slide panel -->
+    <link rel="stylesheet" type="text/css" href="js/slidepanel/slidepanel.css">
+    
+	<!-- cubeportfolio -->
+	<link rel="stylesheet" type="text/css" href="js/cubeportfolio/cubeportfolio.min.css">
+    
+	<!-- tabs -->
+    <link rel="stylesheet" type="text/css" href="js/tabs/assets/css/responsive-tabs.css">
+    <link rel="stylesheet" type="text/css" href="js/tabs/assets/css/responsive-tabs2.css">
+    <link rel="stylesheet" type="text/css" href="js/tabs/assets/css/responsive-tabs3.css">
+
+	<!-- carousel -->
+    <link rel="stylesheet" href="js/carousel/flexslider.css" type="text/css" media="screen" />
+ 	<link rel="stylesheet" type="text/css" href="js/carousel/skin.css" />
+    
+    <!-- progressbar -->
+  	<link rel="stylesheet" href="js/progressbar/ui.progress-bar.css">
+    
+    <!-- accordion -->
+    <link rel="stylesheet" href="js/accordion/accordion.css" type="text/css" media="all">
+    
+    <!-- Lightbox -->
+    <link rel="stylesheet" type="text/css" href="js/lightbox/jquery.fancybox.css" media="screen" />
+	
+    <!-- forms -->
+    <link rel="stylesheet" href="js/form/sky-forms.css" type="text/css" media="all">
+    
+ 
+</head>
+
+<body onload="load()">
+
+
+<div class="site_wrapper">
+
+<?include("header2.htm");?>
+
+<div class="clearfix"></div>
+
+<div class="page_title2">
+<div class="container">
+
+    <div class="title"><h1>Lesson</h1></div>
+    
+    <!--<div class="pagenation">&nbsp;<a href="index.html">Home</a> <i>/</i> <a href="#">Pages</a> <i>/</i> Login Form</div>-->
+    
+</div>
+</div><!-- end page title -->  
+
+<div class="clearfix"></div>
+
+<div class="container">
+
+	<div  class="content_fullwidth">
+	  	<div class="sky-form" style="display: flex; justify-content: center;">
+		<?
+			  
+		if($STATUS==0)echo "<img width='400px' height='280px' align='middle' src='images/waiting.gif'>"; 	  
+		if($STATUS==1)
+		{
+			echo "<div style='width:300px;height:100px;'><div style='background:$GREEN;color:white;font-weight:bold;width:100%;height:50px;line-height:50px;text-align:center' >We found a tutor for you !</div>"; 	
+		    echo "<div style='width:100%'>";
+			echo "<table ><tr><td> <button id='openbutton' class='button' onclick='gotolesson()'>Enter lesson</button></td>";  
+			echo "<td><button id='cancelbutton' class='button' onclick='cancel()'>Cancel lesson</button></td>";
+			echo "</tr></table></div></div>";
+			
+		}	
+		if($STATUS==2 && $MYLESSONWINDOWCLOSED)  //the student was already in the window but for any reason the window is closed
+		{
+			echo "<button id='openbutton' class='button' onclick='gotolesson()'>GO BACK TO YOUR LESSON !</button>";
+		}
+		?>
+		</div>
+      
+		
+      <div class="login_form">
+            
+			<form id="form1" class="sky-form" method="post" onsubmit="return validateForm(event)" action="lesson.htm">
+				<header>Request a lesson:</header>
+				
+				<fieldset>	
+				<section>
+						<label class="input">
+							<i class="icon-append icon-user"></i>
+							<input disabled type="text" id="form_schooltype" name="form_schooltype" placeholder="<? echo $SCHOOLTYPE_LIST[$SCHOOLTYPE];?>">
+							
+						</label>
+					</section>
+				    <input type="hidden" id="form_lessoncode" name="form_lessoncode" >
+					
+				<section>
+						<label class="select">
+							<select id="form_field" name="form_field" onchange="fieldselected()">
+								<option value="" selected disabled>Field of study</option>
+								
+								<?
+								
+								for ($i=0;$i<4;$i++)
+								{
+									if($form_field!="" && $form_field==$i)
+										echo "<option selected value='$i'>".$FIELDS_LIST[$i]."</option>";
+									else
+										echo "<option value='$i'>".$FIELDS_LIST[$i]."</option>";
+								}					
+								?>														
+								
+							</select>
+							<i></i>
+						</label>
+					</section>
+				
+				<section>
+						<label class="select">
+							<select id="form_lessonsubject" name="form_lessonsubject">
+								<option value="" selected disabled>Subject</option>
+								<?
+								for ($i=0;$i<sizeof($SUBJECTS_CODES);$i++)
+								{
+								   if($form_lessonsubject!="" && $form_lessonsubject==$SUBJECTS_CODES[$i])
+								    echo "<option selected value='".$SUBJECTS_CODES[$i]."'>".$SUBJECTS_NAMES[$i]."</option>"; 
+								   else					   
+								    echo "<option value='".$SUBJECTS_CODES[$i]."'>".$SUBJECTS_NAMES[$i]."</option>";														
+								}   
+								?>
+							</select>
+							<i></i>
+						</label>
+					</section>
+					<section>
+						<label class="select">
+							<select id="form_lessontype" name="form_lessontype">
+								<option value="" selected disabled>Type of lesson</option>
+								<?
+								for ($i=0;$i<sizeof($LESSONTYPES_CODES);$i++)																						
+								{
+								   if($form_lessontype!="" && $form_lessontype==$LESSONTYPES_CODES[$i])
+								    echo "<option selected value='".$LESSONTYPES_CODES[$i]."'>".$LESSONTYPES_NAMES[$i]."</option>";
+								   else
+								    echo "<option value='".$LESSONTYPES_CODES[$i]."'>".$LESSONTYPES_NAMES[$i]."</option>"; 
+								}
+								?>
+							</select>
+							<i></i>
+						</label>
+					</section>				
+					<input type="hidden" id="form_requestlesson" name="form_requestlesson" value='<?echo $form_requestlesson;?>'>
+				</fieldset>
+				<footer>
+					<div class="sky-form" style="display: flex; justify-content: center;">
+                    <button type="submit" id="requestbutton" class="button" >Request lesson</button>
+                    </div>
+					
+				</footer>
+			</form>			
+		</div>
+        
+		
+	</div>
+
+</div><!-- end content area -->
+
+
+<?include("footer.htm");?>
+
+</div>
+
+    
+<!-- ######### JS FILES ######### -->
+<!-- get jQuery from the google apis -->
+<script type="text/javascript" src="js/universal/jquery.js"></script>
+
+<!-- style switcher -->
+<script src="js/style-switcher/jquery-1.js"></script>
+<script src="js/style-switcher/styleselector.js"></script>
+
+<!-- animations -->
+<script src="js/animations/js/animations.min.js" type="text/javascript"></script>
+<script src="js/animations/js/smoothscroll.js" type="text/javascript"></script>
+
+<!-- slide panel -->
+<script type="text/javascript" src="js/slidepanel/slidepanel.js"></script>
+
+<!-- mega menu -->
+<script src="js/mainmenu/bootstrap.min.js"></script> 
+<script src="js/mainmenu/customeUI.js"></script> 
+
+<!-- jquery jcarousel -->
+<script type="text/javascript" src="js/carousel/jquery.jcarousel.min.js"></script>
+
+<!-- scroll up -->
+<script src="js/scrolltotop/totop.js" type="text/javascript"></script>
+
+<!-- tabs -->
+<script src="js/tabs/assets/js/responsive-tabs.min.js" type="text/javascript"></script>
+
+<!-- jquery jcarousel -->
+<script type="text/javascript">
+(function($) {
+ "use strict";
+
+	jQuery(document).ready(function() {
+			jQuery('#mycarouselthree').jcarousel();
+	});
+	
+})(jQuery);
+</script>
+
+<!-- accordion -->
+<script type="text/javascript" src="js/accordion/custom.js"></script>
+
+<!-- sticky menu -->
+<script type="text/javascript" src="js/mainmenu/sticky.js"></script>
+<script type="text/javascript" src="js/mainmenu/modernizr.custom.75180.js"></script>
+
+<script src="js/form/jquery.form.min.js"></script>
+<script src="js/form/jquery.validate.min.js"></script>
+<script src="js/form/jquery.modal.js"></script>
+
+
+<!-- PHP Message -->
+<?php 
+$message=$_GET['message'];
+if($message!="")echo "<script>alert('$message');</script>";  
+?>
+
+<script>
+var mylessonwindowclosed=<?echo "$MYLESSONWINDOWCLOSED";?>;
+var available='<?php echo "$USER_BALANCE"; ?>';
+var username='<?php echo "$USER_NAME"; ?>';
+var usertype='<?php echo "$USER_TYPE"; ?>';
+//document.getElementById("available").innerHTML =available;
+//document.getElementById("username").innerHTML =username;
+
+var activelessonstatus=<?php echo "$STATUS"; ?>;   //1st time, user has a lesson currently active, this comes from header, must be at least 0
+var activelessoncode='<?php echo "$LESSON_CODEVAR"; ?>';        //1st time, user has a current active lesson, it can not go to another one
+var lessonfound=<?php echo "$LESSONFOUND"; ?>;                 //1st time is 0, second time is when this page is reloaded
+
+//STUDENTS HAVE A FORM AND SUBMIT THE FORM AND RELOAD THE PAGE
+//TUTORS DON'T HAVE THE FORM BUT OPEN LESSONS DIRECTLY
+//if the first time there is an active lesson it can not search or go to another lesson
+
+
+var form_lessoncode='<?php echo "$form_lessoncode" ?>'; //2nd time this variable is not empty and it tryes to go to lesson
+var form_lessontype=<?php echo "$form_lessontype" ?>; //2nd time this variable is not empty and it tryes to go to lesson
+var form_lessonsubject=<?php echo "$form_lessonsubject" ?>; //2nd time this variable is not empty and it tryes to go to lesson
+
+setTimeout(reload,<?echo "$RELOAD";?>);
+function reload()
+{
+	location.reload(); 
+}
+
+function load()
+{
+	var request=document.getElementById("form_requestlesson").value;
+	if(request!="no")
+	{
+		document.getElementById("form_field").disabled=true;
+		document.getElementById("form_lessonsubject").disabled=true;
+		document.getElementById("form_lessontype").disabled=true;
+		document.getElementById("requestbutton").innerHTML="Cancel request";
+		document.getElementById("form1").setAttribute('onsubmit','return validateCancel()');
+		
+	}
+	else
+	{
+		document.getElementById("form_field").disabled=false;
+		document.getElementById("form_lessonsubject").disabled=false;
+		document.getElementById("form_lessontype").disabled=false;
+		document.getElementById("requestbutton").innerHTML="Request lesson";
+		document.getElementById("form1").setAttribute('onsubmit','return validateForm(event)');
+	}
+	
+	//if(lessonfound  && activelessonstatus==1)gotolesson();
+}
+
+function sleep(milliseconds) {
+  var start = new Date().getTime();
+  for (var i = 0; i < 1e7; i++) {
+    if ((new Date().getTime() - start) > milliseconds){
+      break;
+    }
+  }
+}
+if(lessonfound || activelessonstatus)
+{
+	//change this 
+	//document.getElementById("lesson").innerHTML ="Active lesson: "+activelessoncode;	
+	//document.getElementById("openbutton").disabled=!mylessonwindowclosed; //if there is an active lesson it depends if the window is closed or not	
+}
+else
+{
+	//change this 
+	//document.getElementById("lesson").innerHTML ="No active lesson";
+    //document.getElementById("openbutton").disabled=false; 	
+}
+
+
+
+
+//the form calls the same page to search the lesson
+function validateForm(e)
+{
+  
+  if(document.getElementById("form_field").value=='')
+  {
+	alert('Enter the field of study');
+	return false;
+  }
+  if(document.getElementById("form_lessonsubject").value=='')
+  {
+	alert('Enter the subject');
+	return false;
+  }
+  if(document.getElementById("form_lessontype").value=='')
+  {
+	alert('Enter the type of lesson');
+	return false;
+  }
+  
+  if(parseInt(available)<2 && usertype=='STUDENT')
+  {
+		alert('You have too few available minutes. Please add minutes');
+		return false;
+   }
+   document.getElementById("form_requestlesson").value='yes';
+   return true;
+}
+
+
+function validateCancel(e)
+{
+	document.getElementById("form_requestlesson").value='cancel';
+	return true;
+} 
+
+function gotolesson()  
+{
+   window.open("lessonwindow2.htm?code="+activelessoncode, '_blank');
+   
+}
+
+function fieldselected()
+{
+	f=document.getElementById("form1");
+	//alert(f);
+	f.action='lesson.htm';
+	f.submit();
+}
+</script>
+<script>
+if ( window.history.replaceState ) {
+  window.history.replaceState( null, null, "lesson2.htm" );
+}
+</script>
+
+
+
+<!-- cubeportfolio -->
+<script type="text/javascript" src="js/cubeportfolio/jquery.cubeportfolio.min.js"></script>
+<script type="text/javascript" src="js/cubeportfolio/main.js"></script>
+<script type="text/javascript" src="js/cubeportfolio/main5.js"></script>
+<script type="text/javascript" src="js/cubeportfolio/main6.js"></script>
+
+<!-- carousel -->
+<script defer src="js/carousel/jquery.flexslider.js"></script>
+<script defer src="js/carousel/custom.js"></script>
+
+<!-- lightbox -->
+<script type="text/javascript" src="js/lightbox/jquery.fancybox.js"></script>
+<script type="text/javascript" src="js/lightbox/custom.js"></script>
+
+
+
+</body>
+</html>

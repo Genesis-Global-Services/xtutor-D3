@@ -1,0 +1,469 @@
+<?php
+    include("security/constants.php");  //no header because when sessions is outdated it shows login window
+	include("conexion/conexion.php");
+	//WATCH OUT THIS PAGE RELOADS VERY FREQUENTLY
+	session_start();
+	
+	
+	
+	$con=openDB();
+	$USER_CODE=$_SESSION['COD'];
+	$query="SELECT SESSIONID,NAME,BALANCE,USERTYPE FROM USERS2 WHERE USERCODE='$USER_CODE'";
+	$resultado=genesis_exec($con,$query);
+    $SSID=genesis_result($resultado,1);
+	$USER_NAME=genesis_result($resultado,2);$_SESSION['NAME']=$USER_NAME;
+	$USER_BALANCE=genesis_result($resultado,3);$_SESSION['BALANCE']=$USER_BALANCE;
+	$USER_TYPE=genesis_result($resultado,4);$_SESSION['TYPE']=$USER_TYPE;
+	
+	$code=$_GET['code']; //student and tutor must get this here but for tutor it may not be in the table yet
+	$requestcode=$_GET['requestcode'];  //STUDENT IS NOT CURRENTLY SENDING THIS
+		
+	$action=$_POST['form_action'];         //we get POST when it comes from the same script
+    if($action=="")$action="reload";
+	//BE CAREFULL HERE, CURRENTLY WE ARE USING $code to distinguish if this is first time or not
+	//when we reload then $code is empty
+	if($code!="")$action="first";  
+	
+	//action has 3 values :  first, reload, stop
+		
+	//STEP 1 : WE READ STATUS
+	//note: TUTOR IN status=1 NEEDS to check the waiting time constantly
+	// BOTH NEED TO CHECK IF THE OTHER PARTY LEFT constantly
+	if($USER_TYPE=="STUDENT")
+	{
+		$query="SELECT STATUS,TUTOR,0,TIME_TO_SEC(TIMEDIFF(NOW(),LASTUPDATETUTOR)) FROM LESSONREQUESTS2 WHERE LESSONCODE='$code'";
+	}
+	else
+	{
+		$query="SELECT STATUS,TUTOR,TIME_TO_SEC(TIMEDIFF(NOW(),TUTORTIME)),TIME_TO_SEC(TIMEDIFF(NOW(),LASTUPDATETUTOR)) FROM LESSONREQUESTS2 WHERE CODE='$requestcode'";
+	}
+	$result=genesis_exec($con,$query1);
+	$STATUS=genesis_result($result,1);
+	$LESSON_TUTOR=genesis_result($result,2);
+	$WAITINGTIME=genesis_result($result,3);
+	$UPDATETIME=genesis_result($result,4);
+	
+	//STEP 2: WE VALIDATE	
+	$closewindow=false;
+	if($USER_TYPE!='STUDENT' && !is_null($LESSON_TUTOR) && $LESSON_TUTOR!=$USER_CODE)
+	{
+		$closewindow=true;
+		$message='The opportunity is no longer available';
+	}
+	if($STATUS==3)
+	{
+		$closewindow=true;
+		$message='The lesson has been stopped';
+	}
+	if($STATUS==4)
+	{
+		$closewindow=true;
+		$message='The lesson request has been canceled';
+	}
+	
+	if($WAITINGTIME>$MAXWAITINGTIME && $USER_TYPE!='STUDENT' && $STATUS==1)
+	{
+		$closewindow=true;
+		$query="UPDATE LESSONREQUESTS2 SET STATUS = 4 WHERE LESSONCODE='$code'";    
+	    $res3=genesis_exec($con,$query);	
+	    $message='The student did not enter the lesson';
+	}
+	if($STATUS==3 && $UPDATETIME>$MAXINACTIVETIME)
+    {	
+	    $THEOTHERPARTLEFT=1;	
+		$closewindow=true;
+		$query="UPDATE LESSONREQUESTS2 SET STATUS = 3 WHERE LESSONCODE='$code'";    
+	    $res3=genesis_exec($con,$query);	
+	    $message='The student did not enter the lesson';		
+	}
+	
+	
+	
+	//STEP 3 : WE UPDATE STATUS IF NECESSARY
+	if($USER_TYPE!="STUDENT" && $STATUS==0)$query="UPDATE LESSONREQUESTS2 SET LESSONCODE='$code',TUTOR='$USER_CODE',TUTORTIME=NOW(),STATUS=1 WHERE CODE=$requestcode";
+	if($USER_TYPE=="STUDENT" && $STATUS==1)$query="UPDATE LESSONREQUESTS2 SET LESSONBEGIN=NOW(),STATUS=2,INITIALBALANCE=B.BALANCE,MINUTES=0,RATEFOR30=$RATE,CHARGE=0,LESSONEND=NOW() FROM LESSONREQUESTS2 AS A INNER JOIN USERS2 AS B ON A.USERCODE=B.USERCODE WHERE LESSONCODE='$code'";
+	//if($USER_TYPE=="STUDENT" && $STATUS==1)$query="UPDATE LESSONREQUESTS2 SET STATUS=2,INITIALBALANCE=$USER_BALANCE WHERE LESSONCODE='$code'";
+	$result=genesis_exec($con,$query);
+	
+	//STEP 4 : WE UPDATE TIME
+	if($USER_TYPE=="STUDENT")
+	{
+		$query="UPDATE LESSONREQUESTS2 SET LASTUPDATESTUDENT=NOW(),LESSONEND=NOW() WHERE LESSONCODE='$code'";
+	}
+	else
+	{
+		$query="UPDATE LESSONREQUESTS2 SET LASTUPDATETUTOR=NOW(),LESSONEND=NOW() WHERE CODE='$requestcode'";
+	}
+	$result=genesis_exec($con,$query);
+	
+	//STEP 5 :  WE READ ALL NECESSARY DATA
+	if($action=="first") //only first time	
+	{
+    	//reads lesson and validates //makes sure to do this fisrt before $action=='reload' below
+    	if($USER_TYPE!='STUDENT')  //only for tutor first time 
+		{
+			$query="SELECT LESSONCODE,A.TUTOR,'',A.USERCODE,D.NAME,A.SCHOOLTYPE,A.FIELD,B.SUBJECTCODE,B.DESCRIPTION,C.CODE,C.DESCRIPTION,A.STATUS,TIME_TO_SEC(TIMEDIFF(NOW(),TUTORTIME)) FROM LESSONREQUESTS AS A JOIN SUBJECTS AS B JOIN LESSONTYPES AS C JOIN USERS AS D ".
+		    " WHERE A.LESSONSUBJECT=B.SUBJECTCODE AND A.LESSONTYPE=C.CODE AND A.CODE=$requestcode AND A.USERCODE=D.USERCODE ";
+		}
+		else
+		{
+			$query="SELECT LESSONCODE,A.TUTOR,E.NAME,A.USERCODE,D.NAME,A.SCHOOLTYPE,A.FIELD,B.SUBJECTCODE,B.DESCRIPTION,C.CODE,C.DESCRIPTION,A.STATUS,TIME_TO_SEC(TIMEDIFF(NOW(),TUTORTIME)) FROM LESSONREQUESTS AS A JOIN SUBJECTS AS B JOIN LESSONTYPES AS C JOIN USERS AS D JOIN USERS AS E ".
+		    " WHERE A.LESSONSUBJECT=B.SUBJECTCODE AND A.LESSONTYPE=C.CODE AND A.LESSONCODE='$code' AND A.USERCODE=D.USERCODE AND A.TUTOR=E.USERCODE";
+		}
+		//echo $query; exit();		
+		$resultado=genesis_exec($con,$query);
+		if(genesis_fetch_row($resultado))  
+        { 	
+			$LESSON_CODE=genesis_result($resultado,1);$_SESSION['LESSON_CODE']=$LESSON_CODE;
+			$LESSON_TUTOR=genesis_result($resultado,2);$_SESSION['LESSON_TUTOR']=$LESSON_TUTOR;
+			$LESSON_TUTOR_NAME=genesis_result($resultado,3);$_SESSION['LESSON_TUTOR_NAME']=$LESSON_TUTOR_NAME;
+			$LESSON_STUDENT=genesis_result($resultado,4);$_SESSION['LESSON_STUDENT']=$LESSON_STUDENT;
+			$LESSON_STUDENT_NAME=genesis_result($resultado,5);$_SESSION['LESSON_STUDENT_NAME']=$LESSON_STUDENT_NAME;
+			$LESSON_SCHOOL=genesis_result($resultado,6);$_SESSION['LESSON_SCHOOL']=$LESSON_SCHOOL;
+			$LESSON_FIELD=genesis_result($resultado,7);$_SESSION['LESSON_FIELD']=$LESSON_FIELD;
+			$LESSON_SUBJECT=genesis_result($resultado,8);$_SESSION['LESSON_SUBJECT']=$LESSON_SUBJECT;
+			$LESSON_SUBJECT_DESCRIPTION=genesis_result($resultado,9);$_SESSION['LESSON_SUBJECT_DESCRIPTION']=$LESSON_SUBJECT_DESCRIPTION;
+			$LESSON_TYPE=genesis_result($resultado,10);$_SESSION['LESSON_TYPE']=$LESSON_TYPE;
+			$LESSON_TYPE_DESCRIPTION=genesis_result($resultado,11);$_SESSION['LESSON_TYPE_DESCRIPTION']=$LESSON_TYPE_DESCRIPTION;				 	
+		}	
+	}
+	else  //not the fisrt time in this page 
+	{
+	    $LESSON_CODE=$_SESSION['LESSON_CODE'];
+	    $LESSON_TUTOR=$_SESSION['LESSON_TUTOR'];
+		$LESSON_TUTOR_NAME=$_SESSION['LESSON_TUTOR_NAME'];
+		$LESSON_STUDENT=$_SESSION['LESSON_STUDENT'];
+		$LESSON_STUDENT_NAME=$_SESSION['LESSON_STUDENT_NAME'];
+		$LESSON_SCHOOL=$_SESSION['LESSON_SCHOOL'];
+		$LESSON_FIELD=$_SESSION['LESSON_FIELD'];
+		$LESSON_SUBJECT=$_SESSION['LESSON_SUBJECT'];
+		$LESSON_SUBJECT_DESCRIPTION=$_SESSION['LESSON_SUBJECT_DESCRIPTION'];
+		$LESSON_TYPE=$_SESSION['LESSON_TYPE'];
+		$LESSON_TYPE_DESCRIPTION=$_SESSION['LESSON_TYPE_DESCRIPTION'];	
+	}
+	if($USER_TYPE!='STUDENT')  $OTHERNAME=$LESSON_STUDENT_NAME;
+	else $OTHERNAME=$LESSON_TUTOR_NAME;
+	
+	
+	$REMAININGSECONDS=0;
+	//$LESSON_NUMBER AND $ACTIVE_LESSONSTATUS ARE READ FROM TABLE USERS AT THE BEGINNING
+	if($USER_TYPE=='STUDENT' && $action=='reload' && $STATUS==2 )  //display time
+	{
+	    $query="SELECT LESSONCODE,LESSONBEGIN,RATEFOR30,TIME_TO_SEC(TIMEDIFF(NOW(),LESSONBEGIN)),TIME_TO_SEC(TIMEDIFF(NOW(),LESSONEND)),INITIALBALANCE,LESSONTYPE,LESSONSUBJECT FROM LESSONREQUESTS2 WHERE LESSONCODE=$code"; //
+		$resultado=genesis_exec($con,$query);
+		$MINUTES=0;
+		$CHARGE=0;
+		if(genesis_fetch_row($resultado)) 
+        { 	
+			
+			$BEGIN=genesis_result($resultado,2);
+			$RATE=genesis_result($resultado,3);
+			$SECONDS_SINCEBEGIN=genesis_result($resultado,4);
+			$SECONDS_SINCEEND=genesis_result($resultado,5);
+			$INITIALBALANCE=genesis_result($resultado,6);
+			$LESSON_TYPE=genesis_result($resultado,7);
+			$LESSON_SUBJECT=genesis_result($resultado,8);
+			
+			
+			$MINUTES_SINCEBEGIN=floor($SECONDS_SINCEBEGIN/60);
+			$REMAININGSECONDS=$SECONDS_SINCEBEGIN%60;  //MOD
+			$CHARGE=round($MINUTES_SINCEBEGIN*$RATE/30,2);
+			$MINUTES_SINCEEND=floor($SECONDS_SINCEEND/60);
+			$USER_BALANCE=$INITIALBALANCE-$MINUTES_SINCEBEGIN;
+			
+			$query="UPDATE LESSONREQUESTS2 SET LESSONEND=NOW(), MINUTES=$MINUTES_SINCEBEGIN, CHARGE=$CHARGE WHERE LESSONCODE='$code'"; //
+		    $resultado=genesis_exec($con,$query);
+			$query="UPDATE USERS SET BALANCE =$USER_BALANCE WHERE USERCODE='$USER_CODE'"; 
+		    $resultado=genesis_exec($con,$query);
+			
+		}
+		//the else case is impossible, when we start lesson then both tables are affected, also there is a rollback in case of error		
+	}
+	
+	if($USER_TYPE!='STUDENT' && $action=='reload' && $STATUS==2)  //display time
+	{
+	    //it reads USER_BALANCE OF STUDENT from table users above
+		$query="SELECT LESSONCODE,LESSONBEGIN,RATEFOR30,TIME_TO_SEC(TIMEDIFF(NOW(),LESSONBEGIN)),TIME_TO_SEC(TIMEDIFF(NOW(),LESSONEND)),INITIALBALANCE,LESSONTYPE,LESSONSUBJECT FROM LESSONREQUESTSQUESTS2 WHERE LESSONCODE=$code "; //
+		$resultado=genesis_exec($con,$query);
+		$MINUTES=0;
+		$CHARGE=0;
+		if(genesis_fetch_row($resultado)) 
+        { 	
+			
+			$BEGIN=genesis_result($resultado,2);
+			$RATE=genesis_result($resultado,3);
+			$SECONDS_SINCEBEGIN=genesis_result($resultado,4);
+			$SECONDS_SINCEEND=genesis_result($resultado,5);
+			$INITIALBALANCE=genesis_result($resultado,6);
+			$LESSON_TYPE=genesis_result($resultado,7);
+			$LESSON_SUBJECT=genesis_result($resultado,8);
+			
+			$MINUTES_SINCEBEGIN=floor($SECONDS_SINCEBEGIN/60);
+			$REMAININGSECONDS=$SECONDS_SINCEBEGIN%60;  //MOD
+			//if($REMAININGSECONDS>=0 && $REMAININGSECONDS<30)$UPDATEFLAG=1;
+			//else $UPDATEFLAG=0;	
+			
+			$CHARGE=round($MINUTES_SINCEBEGIN*$RATE/30,2);
+			$MINUTES_SINCEEND=floor($SECONDS_SINCEEND/60);
+			$USER_BALANCE=$INITIALBALANCE-$MINUTES_SINCEBEGIN;
+			//echo "MINUTES_SINCEEND=$MINUTES_SINCEEND";
+				
+		}
+		//the else case is impossible, when we start lesson then both tables are affected, also there is a rollback in case of error		
+	}
+	
+		
+	//IF WE DONT STOP THE LESSON, THE TIME KEEPS RUNNING (IT WILL BE COUNTED FROM THE START OF THE LESSON) 
+	if($action=='stop' )  //student or tutor can stop the lesson //WE CAN STOP A LESSON WITHOUT HAVING STARTED IT
+	{
+		$query="UPDATE LESSONREQUESTS2 SET STATUS=3,LESSONEND=NOW() WHERE LESSONCODE='$code'";
+		$resultado=genesis_exec($con,$query);
+		$message='You stopped the lesson';
+		$closewindow=true;
+	}
+	
+	
+	genesis_commit($con);
+    closeDB($con);
+?>
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="xtutor.css">
+<title>xtutor</title>
+</head>
+<body>
+<div >
+<form id="form1">
+<input type=hidden name='form_action' id='form_action'></input>
+<input type=hidden name='form_lessoncodevar2' id='form_lessoncodevar2'></input>
+</form>
+<!--be carefull, any button inside a form will submit the form-->
+<table id="table1" class="header" ><tr><td><img src="images/logo.png" width="100px" height="40px" ></td><td>Welcome <output id="username"></output></td><td>Available minutes= <output id="available">00</output> </td><td>Lesson time= <output id="timer">00</output>:<output id="timer2">00</output></td><td>Lesson code= <input name='form_lessoncodevar' id='form_lessoncodevar' size=7 ></input></td><?php if($_SESSION['TIPO_USUARIO']!='STUDENT' && $WHITEBOARD!="TWIDDLA")echo "<td><button id='send' onclick='sendcode()'>Send code</button></td>";?> <?php if($_SESSION['TIPO_USUARIO']=='STUDENT' && $SHOWSTARTBUTTON)echo"<td><button id='start' onclick='startfunction()'>Start lesson</button></td>";?><td><button id="stop" onclick="stopfunction(1)">Stop lesson</button></td></tr></table>
+<table id="table2" class="header"  style="font-size:16px" ><tr><?php if($_SESSION['TIPO_USUARIO']=='STUDENT' )echo"<td>Tutor: <output id='form_tutorname'></output></td>"; else echo"<td>Student: <output id='form_studentname'></output></td>";?><td>School: <output id="lessonschool"></output></td><td>Subject: <output id="lessontopic"></output></td><td>Type: <output id="lessontype"></output></td><td>Status: <output id="lessonstatus"></output></td></tr></table>
+</div>
+
+<script>
+setTimeout(reload,<?echo "$RELOAD";?>);  //every minute
+function reload()
+{
+	location.reload(); 
+}
+//var originalAvailable='<?php echo "$USER_BALANCE"; ?>';  //Deprecated:this helps if we want to count time locally
+var newAvailable=<?php echo "$USER_BALANCE"; ?>;
+var elapsedTime='<?php echo "$MINUTES_SINCEBEGIN"; ?>';
+var username='<?php echo "$USER_NAME"; ?>';
+var usertype='<?php echo "$USER_TYPE" ?>';
+var code='<?php echo "$LESSON_CODEVAR" ?>';
+var studentname='<?php echo "$OTHERNAME"; ?>';  //THIS IS TUTOR NAME IN CASE CURRECT USER IS STUDENT
+var activelessonstatus=<?php echo "$ACTIVE_LESSONSTATUS"; ?>;
+var theotherpartleft=<?echo "$THEOTHERPARTLEFT";?>;
+var lessonschoolA='<?echo $LESSON_SCHOOL;?>';
+var lessonschool='<?echo $SCHOOLTYPE_LIST[$LESSON_SCHOOL];?>';
+var lessontopic='<?echo "$LESSON_SUBJECT_DESCRIPTION";?>';
+var lessontype='<?echo "$LESSON_TYPE_DESCRIPTION";?>';
+var lessonstatus='<?echo "$LESSONSTATUS_LIST[$STATUS]";?>';
+var resumed=<?echo "$RESUMED";?>;
+var started=<?echo "$STARTED";?>;
+var startingTime= new Date();
+//var updateflag=<?echo "$UPDATEFLAG";?>; //1 OR 0
+var remainingseconds=<?echo "$REMAININGSECONDS";?>;
+if(activelessonstatus==3)setInterval(myTimer,1000);  //every sec
+
+
+loadpage();  //every time this page is loaded 
+function loadpage()
+{
+	document.getElementById("timer").innerHTML = elapsedTime;
+	if(activelessonstatus==3)document.getElementById("timer2").innerHTML =remainingseconds ;
+	else document.getElementById("timer2").innerHTML = 0;
+	document.getElementById("available").innerHTML = newAvailable;
+	document.getElementById("username").innerHTML =username;
+	document.getElementById("form_lessoncodevar").value = code;
+	document.getElementById("stop").disabled = false;
+	document.getElementById("lessonschool").value = lessonschool;
+	document.getElementById("lessontopic").value = lessontopic;
+	document.getElementById("lessontype").value = lessontype;
+	document.getElementById("lessonstatus").value = lessonstatus;
+	if(activelessonstatus==3) //lesson in progress
+	{
+		document.getElementById("table1").style.backgroundColor="#AA5555";
+		document.getElementById("table2").style.backgroundColor="#AA5555";
+	}
+	else
+	{
+		document.getElementById("table1").style.backgroundColor="#222255";
+		document.getElementById("table2").style.backgroundColor="#222255";
+	}
+	
+	document.getElementById("form_lessoncodevar").disabled = true;   //modify this for liveboard. For liveboard the tutor enter the code in this field
+	if(usertype=='STUDENT')
+	{
+		
+		document.getElementById("form_tutorname").value =studentname; //studentname has the name of the tutor in case current user is student
+		
+		if(activelessonstatus!=3 && studentname!='' && !theotherpartleft && newAvailable>=1) 
+		{
+			//alert('Please start lesson');
+			//document.getElementById("start").disabled = false;
+		}
+		else
+		{
+			//document.getElementById("start").disabled = true;
+		}	
+	}		
+	else //tutor
+	{	
+		document.getElementById("form_studentname").value =studentname;		
+		
+	}
+	if(resumed)
+	{
+		confirm('Your lesson has been resumed');		
+	}
+	if(started)
+	{
+		confirm('Your lesson has started');		
+	}
+	if(theotherpartleft && (activelessonstatus==3 || activelessonstatus==2))
+	{
+		confirm('The other party left the lesson window. Your lesson will be paused until the other party comes back.');
+		pausefunction();
+	}
+	if(theotherpartleft && activelessonstatus==1)
+	{
+		confirm('The other party did not enter the lesson. Your lesson will be canceled.');
+		stopfunction(0);
+	}
+	if(usertype=='STUDENT' && newAvailable<1 && activelessonstatus==3) 
+	{
+		confirm('You ran out of minutes. Your lesson will be paused until more minutes are added.');
+		pausefunction();
+	}
+	if(usertype=='STUDENT' && newAvailable<1 && activelessonstatus==4)//already paused 
+	{
+		//alert('You ran out of minutes. Your lesson will be paused until more minutes are added.');
+		parent.close();
+	}
+}
+
+function pausefunction()
+{
+	//alert('The lesson will be paused');
+	document.getElementById("form1").method="post";
+	document.getElementById("form1").action="lessonwindowheader2.htm";
+	document.getElementById("form_action").value="pause";
+	document.getElementById("form1").submit();
+
+}
+function convertMillisecondsToTime(difference_ms)
+{
+
+  //take out milliseconds
+  difference_ms = difference_ms/1000;
+  var seconds = Math.floor(difference_ms % 60).toString();
+  difference_ms = difference_ms/60; 
+  var minutes = Math.floor(difference_ms % 60).toString();
+  difference_ms = difference_ms/60; 
+  var hours = Math.floor(difference_ms % 24).toString();  
+  var days = Math.floor(difference_ms/24).toString();
+  if (seconds.length==1)seconds='0'+seconds;
+  if (minutes.length==1)minutes='0'+minutes;
+  if (hours.length==1)hours='0'+hours;
+  return hours + ':' + minutes;
+  
+}  
+function convertMillisecondsToMinutes(difference_ms)
+{
+
+  //take out milliseconds
+  difference_ms = difference_ms/1000;
+  var seconds = Math.floor(difference_ms % 60).toString();
+  var minutes = Math.floor(difference_ms/60); 
+  return minutes;
+  
+}  
+var changeminutes=false;
+function myTimer() {
+    //alert('myTimer');
+    var d = new Date();
+	var elapsed=d.getTime()-startingTime.getTime();  //elapsed milliseconds
+	var elapsedseconds=Math.floor(elapsed/1000)+remainingseconds;
+	var minutes=parseInt(document.getElementById("timer").innerHTML);
+	if(elapsedseconds>=60 && !changeminutes) //minutes are corrected only once
+	{
+		minutes=minutes+1;
+		changeminutes=true;
+		document.getElementById("timer").innerHTML = minutes.toString();	
+	}
+	if(elapsedseconds>=60)
+	{
+		elapsedseconds=elapsedseconds-60;
+	}
+	document.getElementById("timer2").innerHTML = elapsedseconds;
+	//var newAvailable=originalAvailable-convertMillisecondsToMinutes(elapsedTime);
+	//var currentAvailable=document.getElementById("available").innerHTML; 
+	//if(newAvailable!=currentAvailable)document.getElementById("available").innerHTML =newAvailable; 
+	
+}
+function stopfunction(needconfirm)
+{
+	//be carefull, any button inside a form will submit the form
+	if(needconfirm)
+		resp=confirm('Are you sure to stop the lesson and close this window ?')
+	else
+        resp=1;	
+	if(resp)
+	{	
+		//clearInterval(timer);
+		document.getElementById("form1").method="post";
+		document.getElementById("form1").action="lessonwindowheader2.htm";
+		document.getElementById("form_action").value="stop";
+		document.getElementById("form1").submit();
+	}
+	
+}
+
+
+function startfunction()
+{
+	//startingTime=new Date();
+	//timer = setInterval(myTimer, 60000);
+	//document.getElementById("start").disabled=true;
+	document.getElementById("form1").method="post";
+	document.getElementById("form1").action="lessonwindowheader2.htm";
+	document.getElementById("form_action").value="start";
+	document.getElementById("form1").submit();
+
+}
+
+//this function is only for LIVEBOARD
+function sendcode()
+{
+    code=document.getElementById("form_lessoncodevar").value;
+	if(code=="")
+		alert("Introduce the code");
+	else
+	{	
+		document.getElementById("form1").method="post";
+		document.getElementById("form1").action="lessonwindowheader2.htm";
+		document.getElementById("form_action").value="sendcode";
+		document.getElementById("form_lessoncodevar2").value=code;
+		document.getElementById("form1").submit();
+	}
+}
+
+<?
+if($closewindow){	
+echo "confirm('$message');";
+echo "parent.close();";
+}
+?>
+</script>
+<script>
+if ( window.history.replaceState ) {
+  //window.history.replaceState( null, null, window.location.href );
+  window.history.replaceState( null, null, "lessonwindowheader2.htm" );
+}
+</script>
+</body>
+</html>
